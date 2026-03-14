@@ -1,0 +1,40 @@
+image: ghcr.io/cirruslabs/android-sdk:34
+
+stages:
+  - build
+
+  build-apk:
+    stage: build
+      before_script:
+          # 1. Install Node.js 20 and Java 21 onto the cloud server
+              - apt-get update
+                  - apt-get install -y curl openjdk-21-jdk
+                      - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                          - apt-get install -y nodejs
+                              - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                                script:
+                                    # 2. Build the Web App
+                                        - npm install
+                                            - npm run build
+                                                
+                                                    # 3. Install Capacitor (Android Wrapper)
+                                                        - npm install @capacitor/core @capacitor/android
+                                                            - npm install @capacitor/cli -D
+                                                                
+                                                                    # 4. Generate the Android Project
+                                                                        - npx cap init "Roleplay Vault" "com.roleplay.vault" --web-dir dist
+                                                                            - npx cap add android
+                                                                                - npx cap sync android
+                                                                                    
+                                                                                        # 5. Fix the Kotlin duplicate classes issue
+                                                                                            - echo "configurations.all { resolutionStrategy { exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'; exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8' } }" >> android/app/build.gradle
+                                                                                                
+                                                                                                    # 6. Build the APK!
+                                                                                                        - cd android
+                                                                                                            - chmod +x gradlew
+                                                                                                                - ./gradlew assembleDebug
+                                                                                                                  artifacts:
+                                                                                                                      name: "Roleplay-Vault-APK"
+                                                                                                                          paths:
+                                                                                                                                - android/app/build/outputs/apk/debug/app-debug.apk
+                                                                                                                                    expire_in: 1 week

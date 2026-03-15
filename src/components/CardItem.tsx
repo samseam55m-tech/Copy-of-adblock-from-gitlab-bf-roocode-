@@ -18,10 +18,11 @@ interface CardItemProps {
   onClick?: (id: string) => void;
   tags?: Tag[];
   onTogglePin?: (card: Card) => void;
+  showDates?: boolean;
   staggerIndex?: number;
 }
 
-export default React.memo(function CardItem({ card, selected, isSortable = true, onSelect, onLongPress, onClick, tags, onTogglePin, staggerIndex = 0 }: CardItemProps) {
+export default React.memo(function CardItem({ card, selected, isSortable = true, onSelect, onLongPress, onClick, tags, onTogglePin, showDates, staggerIndex = 0 }: CardItemProps) {
   const [showAllTags, setShowAllTags] = useState(false);
   const tagTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -200,6 +201,23 @@ export default React.memo(function CardItem({ card, selected, isSortable = true,
                     </div>
                   </div>
                 )}
+              {showDates === true && (
+                <div className="mt-3 flex items-center shrink-0">
+                  <div className="bg-accent text-white px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wide shadow-md flex items-center gap-1.5 w-max">
+                    {card.updatedAt ? (
+                      <>
+                        <span className="text-white/80">Edited:</span>
+                        {new Date(Number(card.updatedAt) || Date.now()).toLocaleDateString()}
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-white/80">Created:</span>
+                        {new Date(Number(card.createdAt) || Date.now()).toLocaleDateString()}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
               </div>
             </div>
           ) : (
@@ -249,6 +267,24 @@ export default React.memo(function CardItem({ card, selected, isSortable = true,
                         </motion.span>
                       ))}
                     </AnimatePresence>
+                  </div>
+                </div>
+              )}
+
+              {showDates === true && (
+                <div className="mt-3 flex items-center shrink-0">
+                  <div className="bg-accent text-white px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wide shadow-md flex items-center gap-1.5 w-max">
+                    {card.updatedAt ? (
+                      <>
+                        <span className="text-white/80">Edited:</span>
+                        {new Date(Number(card.updatedAt) || Date.now()).toLocaleDateString()}
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-white/80">Created:</span>
+                        {new Date(Number(card.createdAt) || Date.now()).toLocaleDateString()}
+                      </>
+                    )}
                   </div>
                 </div>
               )}

@@ -19,7 +19,8 @@ export default function MainScreen() {
 
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [selectedSearchTags, setSelectedSearchTags] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<'dateDesc' | 'dateAsc' | 'nameAsc' | 'nameDesc'>('dateDesc');
+  const [sortBy, setSortBy] = useState<'dateDesc' | 'dateAsc' | 'nameAsc' | 'nameDesc' | 'editedDesc'>('dateDesc');
+  const [showDates, setShowDates] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -86,8 +87,12 @@ export default function MainScreen() {
       }
 
       switch (sortBy) {
-        case 'dateDesc': return b.createdAt - a.createdAt;
-        case 'dateAsc': return a.createdAt - b.createdAt;
+        case 'editedDesc':
+          return (Number(b.updatedAt || b.createdAt) || 0) - (Number(a.updatedAt || a.createdAt) || 0);
+        case 'dateDesc':
+          return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+        case 'dateAsc':
+          return (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0);
         case 'nameAsc': return a.name.localeCompare(b.name);
         case 'nameDesc': return b.name.localeCompare(a.name);
         default: return 0;
@@ -279,6 +284,7 @@ export default function MainScreen() {
                       key={card.id} 
                       card={card} 
                       tags={tags}
+                      showDates={showDates}
                       onTogglePin={handleTogglePinSingle}
                       selected={selectionMode ? selectedCards.has(card.id) : undefined}
                       onSelect={selectionMode ? toggleSelection : undefined}
@@ -309,6 +315,7 @@ export default function MainScreen() {
                       key={card.id} 
                       card={card} 
                       tags={tags}
+                      showDates={showDates}
                       onTogglePin={handleTogglePinSingle}
                       selected={selectionMode ? selectedCards.has(card.id) : undefined}
                       onSelect={selectionMode ? toggleSelection : undefined}
@@ -392,9 +399,21 @@ export default function MainScreen() {
                 >
                   <option value="dateDesc">Newest First</option>
                   <option value="dateAsc">Oldest First</option>
+                  <option value="editedDesc">Newly Edited</option>
                   <option value="nameAsc">Name (A-Z)</option>
                   <option value="nameDesc">Name (Z-A)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <h4 className="text-sm font-medium text-text-muted">Show Dates on Cards</h4>
+                  <div className={`relative w-10 h-6 rounded-full transition-colors ${showDates ? 'bg-accent' : 'bg-bg-main border border-border-main'}`}
+                    onClick={() => setShowDates(prev => !prev)}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${showDates ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </div>
+                </label>
               </div>
 
               <div>
@@ -454,6 +473,7 @@ export default function MainScreen() {
                   setStartDate('');
                   setEndDate('');
                   setSortBy('dateDesc');
+                  setShowDates(false);
                 }}
                 className="px-4 py-2 rounded-xl font-medium text-text-muted hover:bg-bg-surface-hover transition-colors"
               >

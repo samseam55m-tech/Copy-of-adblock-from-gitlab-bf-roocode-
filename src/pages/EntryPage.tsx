@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
 import { Card, HeaderBlock, Tag, CardVariation } from '../types';
-import { generateId, fileToBase64, cn, useUndoRedo } from '../utils';
+import { generateId, compressImage, cn, useUndoRedo } from '../utils';
 import { Plus, X, ChevronLeft, ChevronRight, ChevronDown, Copy, Check, Save, ImagePlus, Tag as TagIcon, Maximize, Minimize, Trash2, ZoomIn, Star, GripVertical, Undo2, Redo2 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -608,32 +608,38 @@ export default function EntryPage() {
 
     const saveCard = async () => {
       setSaveStatus('saving');
-      const cardData: Card = {
-        id: currentCardId.current,
-        name: debouncedName,
-        images: debouncedImages,
-        summary: debouncedSummary,
-        mainTag,
-        tags: debouncedTags,
-        headerBlocks: debouncedActiveVariationId === 'default' ? debouncedHeaderBlocks : (cardsRef.current?.find(c => c.id === currentCardId.current)?.headerBlocks || []),
-        variations: debouncedActiveVariationId === 'default' 
-          ? debouncedVariations 
-          : debouncedVariations.map(v => v.id === debouncedActiveVariationId ? { ...v, headerBlocks: debouncedHeaderBlocks } : v),
-        activeVariationId: debouncedActiveVariationId,
-        createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
-        isPinned: cardsRef.current?.find(c => c.id === currentCardId.current)?.isPinned || false,
-      };
+      try {
+        const existingCard = cardsRef.current?.find(c => c.id === currentCardId.current);
+        const cardData: Card = {
+          id: currentCardId.current,
+          name: debouncedName,
+          images: debouncedImages,
+          summary: debouncedSummary,
+          mainTag,
+          tags: debouncedTags,
+          headerBlocks: debouncedActiveVariationId === 'default' ? debouncedHeaderBlocks : (existingCard?.headerBlocks || []),
+          variations: debouncedActiveVariationId === 'default' 
+            ? debouncedVariations 
+            : debouncedVariations.map(v => v.id === debouncedActiveVariationId ? { ...v, headerBlocks: debouncedHeaderBlocks } : v),
+          activeVariationId: debouncedActiveVariationId,
+          createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
+          updatedAt: Date.now(),
+          isPinned: existingCard?.isPinned || false,
+        };
 
-      const exists = cardsRef.current.some(c => c.id === currentCardId.current);
-      if (exists) {
-        await updateCard(cardData);
-      } else {
-        await addCard(cardData);
-        // We don't navigate here so the user can keep editing
+        const exists = cardsRef.current.some(c => c.id === currentCardId.current);
+        if (exists) {
+          await updateCard(cardData);
+        } else {
+          await addCard(cardData);
+        }
+        setHasUnsavedChanges(false);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+        setSaveStatus('idle');
       }
-      setHasUnsavedChanges(false);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
     };
 
     saveCard();
@@ -646,8 +652,8 @@ export default function EntryPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      const base64Images = await Promise.all(files.map(fileToBase64));
-      setImages(prev => [...prev, ...base64Images]);
+      const compressedImages = await Promise.all(files.map(f => compressImage(f, 1200, 0.7)));
+      setImages(prev => [...prev, ...compressedImages]);
     }
   };
 
@@ -694,30 +700,37 @@ export default function EntryPage() {
       return;
     }
     
-    const cardData: Card = {
-      id: currentCardId.current,
-      name,
-      images,
-      summary,
-      mainTag,
-      tags: selectedTags,
-      headerBlocks: activeVariationId === 'default' ? headerBlocks : (cardsRef.current?.find(c => c.id === currentCardId.current)?.headerBlocks || []),
-      variations: activeVariationId === 'default' 
-        ? variations 
-        : variations.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v),
-      activeVariationId,
-      createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
-      isPinned: cardsRef.current?.find(c => c.id === currentCardId.current)?.isPinned || false,
-    };
+    try {
+      const existingCard = cardsRef.current?.find(c => c.id === currentCardId.current);
+      const cardData: Card = {
+        id: currentCardId.current,
+        name,
+        images,
+        summary,
+        mainTag,
+        tags: selectedTags,
+        headerBlocks: activeVariationId === 'default' ? headerBlocks : (existingCard?.headerBlocks || []),
+        variations: activeVariationId === 'default' 
+          ? variations 
+          : variations.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v),
+        activeVariationId,
+        createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
+        updatedAt: Date.now(),
+        isPinned: existingCard?.isPinned || false,
+      };
 
-    const exists = cardsRef.current.some(c => c.id === currentCardId.current);
-    if (exists) {
-      await updateCard(cardData);
-    } else {
-      await addCard(cardData);
+      const exists = cardsRef.current.some(c => c.id === currentCardId.current);
+      if (exists) {
+        await updateCard(cardData);
+      } else {
+        await addCard(cardData);
+      }
+      setHasUnsavedChanges(false);
+      navigate('/');
+    } catch (err) {
+      console.error('Manual save failed:', err);
+      alert('Save failed. Please try again.');
     }
-    setHasUnsavedChanges(false);
-    navigate('/');
   };
 
   const handleBack = () => {

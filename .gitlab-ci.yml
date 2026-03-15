@@ -6,8 +6,7 @@ stages:
 build-apk:
   stage: build
   before_script:
-    - apt-get update
-    - apt-get install -y curl openjdk-21-jdk
+    - apt-get update && apt-get install -y curl openjdk-21-jdk
     - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     - apt-get install -y nodejs
     - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
@@ -19,7 +18,8 @@ build-apk:
     - npx cap init "Roleplay Vault" "com.roleplay.vault" --web-dir dist
     - npx cap add android
     - npx cap sync android
-    - echo "configurations.all { resolutionStrategy { exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'; exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8' } }" >> android/app/build.gradle
+    - |
+      echo 'configurations.all { resolutionStrategy { exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"; exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8" } }' >> android/app/build.gradle
     - cd android
     - chmod +x gradlew
     - ./gradlew assembleDebug

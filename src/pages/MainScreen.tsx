@@ -20,7 +20,7 @@ export default function MainScreen() {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [selectedSearchTags, setSelectedSearchTags] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'dateDesc' | 'dateAsc' | 'nameAsc' | 'nameDesc' | 'editedDesc'>('dateDesc'); /* <-- Updated */
-  const [showDates, setShowDates] = useState(false); /* <-- Add this line */
+  const [showDates, setShowDates] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -282,7 +282,7 @@ export default function MainScreen() {
                       key={card.id} 
                       card={card} 
                       tags={tags}
-                      showDates={showDates} {/* <-- ADD THIS LINE TO BOTH */}
+                      showDates={showDates}
                       onTogglePin={handleTogglePinSingle}
                       selected={selectionMode ? selectedCards.has(card.id) : undefined}
                       onSelect={selectionMode ? toggleSelection : undefined}
@@ -313,7 +313,7 @@ export default function MainScreen() {
                       key={card.id} 
                       card={card} 
                       tags={tags}
-                      showDates={showDates} {/* <-- ADD THIS LINE TO BOTH */}
+                      showDates={showDates}
                       onTogglePin={handleTogglePinSingle}
                       selected={selectionMode ? selectedCards.has(card.id) : undefined}
                       onSelect={selectionMode ? toggleSelection : undefined}
@@ -395,7 +395,7 @@ export default function MainScreen() {
                   onFocus={e => { e.target.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.5)'; }}
                   onBlur={e => { e.target.style.boxShadow = 'none'; }}
                 >
-                  <option value="editedDesc">Newly Edited</option> {/* <-- ADD THIS LINE */}
+                  <option value="editedDesc">Newly Edited</option>
                   <option value="dateDesc">Newest First</option>
                   <option value="dateAsc">Oldest First</option>
                   <option value="nameAsc">Name (A-Z)</option>

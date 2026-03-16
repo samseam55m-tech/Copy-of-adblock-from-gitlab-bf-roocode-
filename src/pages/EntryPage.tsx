@@ -432,13 +432,25 @@ const SortableHeaderBlockItem = React.memo(function SortableHeaderBlockItem({ bl
                   <Plus className="w-4 h-4" />
                 </button>
                 {variations.length > 1 && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShowDeleteVariationConfirm(true); }}
-                    className="p-1 rounded-lg bg-bg-surface-hover text-text-muted hover:bg-red-500/20 hover:text-red-400 transition-colors shrink-0"
-                    title="Delete Current Variation"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  (() => {
+                    const activeVariation = variations.find(v => v.id === activeVariationId);
+                    const isV1Active = activeVariation?.name === 'V1';
+                    return (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowDeleteVariationConfirm(true); }}
+                        disabled={isV1Active}
+                        className={cn(
+                          "p-1 rounded-lg bg-bg-surface-hover transition-colors shrink-0",
+                          isV1Active
+                            ? "text-text-muted/30 cursor-not-allowed"
+                            : "text-text-muted hover:bg-red-500/20 hover:text-red-400"
+                        )}
+                        title={isV1Active ? "V1 is the base variation and cannot be deleted" : "Delete Current Variation"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    );
+                  })()
                 )}
               </div>
             )}

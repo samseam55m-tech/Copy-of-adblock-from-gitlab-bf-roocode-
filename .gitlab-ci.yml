@@ -23,7 +23,7 @@ build-apk:
       if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
         echo "Signing variables detected - building signed release APK"
         echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
-        echo 'android.signingConfigs { release { storeFile file("release-key.jks"); storePassword System.getenv("KEYSTORE_PASSWORD"); keyAlias System.getenv("KEY_ALIAS"); keyPassword System.getenv("KEY_PASSWORD") } }' >> android/app/build.gradle
+        echo "android.signingConfigs { release { storeFile file(\"release-key.jks\"); storePassword '${KEYSTORE_PASSWORD}'; keyAlias '${KEY_ALIAS}'; keyPassword '${KEY_PASSWORD}' } }" >> android/app/build.gradle
         echo 'android.buildTypes.release.signingConfig android.signingConfigs.release' >> android/app/build.gradle
         cd android
         chmod +x gradlew

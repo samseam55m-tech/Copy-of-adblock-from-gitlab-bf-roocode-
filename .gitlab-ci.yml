@@ -21,25 +21,16 @@ build-apk:
     - echo 'configurations.all { resolutionStrategy { exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"; exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8" } }' >> android/app/build.gradle
     - |
       if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
-        echo "Signing variables detected - building signed release APK..."
+        echo "Signing variables detected - building signed release APK"
         echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
-        cat >> android/app/build.gradle <<'SIGNING_EOF'
-      android.signingConfigs {
-          release {
-              storeFile file("release-key.jks")
-              storePassword System.getenv("KEYSTORE_PASSWORD")
-              keyAlias System.getenv("KEY_ALIAS")
-              keyPassword System.getenv("KEY_PASSWORD")
-          }
-      }
-      android.buildTypes.release.signingConfig android.signingConfigs.release
-      SIGNING_EOF
+        echo 'android.signingConfigs { release { storeFile file("release-key.jks"); storePassword System.getenv("KEYSTORE_PASSWORD"); keyAlias System.getenv("KEY_ALIAS"); keyPassword System.getenv("KEY_PASSWORD") } }' >> android/app/build.gradle
+        echo 'android.buildTypes.release.signingConfig android.signingConfigs.release' >> android/app/build.gradle
         cd android
         chmod +x gradlew
         ./gradlew assembleRelease
         cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/app-signed.apk
       else
-        echo "WARNING: Signing variables not configured - building debug APK."
+        echo "WARNING: Signing variables not configured - building debug APK"
         cd android
         chmod +x gradlew
         ./gradlew assembleDebug

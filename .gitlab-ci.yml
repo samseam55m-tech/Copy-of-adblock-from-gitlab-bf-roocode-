@@ -18,42 +18,28 @@ build-apk:
     - npx cap init "Roleplay Vault" "com.roleplay.vault" --web-dir dist
     - npx cap add android
     - npx cap sync android
-    - |
-      echo 'configurations.all { resolutionStrategy { exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"; exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8" } }' >> android/app/build.gradle
-    # --- Release signing configuration ---
-    # If signing variables are set, build a signed release APK.
-    # Otherwise, fall back to the debug build.
+    - echo 'configurations.all { resolutionStrategy { exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"; exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8" } }' >> android/app/build.gradle
     - |
       if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
-        echo "Signing variables detected — building signed release APK..."
+        echo "Signing variables detected - building signed release APK..."
         echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
-
-        # Inject signingConfigs into android/app/build.gradle
-        sed -i '/^android {/a \
-    signingConfigs {\
-        release {\
-            storeFile file("release-key.jks")\
-            storePassword "'"$KEYSTORE_PASSWORD"'"\
-            keyAlias "'"$KEY_ALIAS"'"\
-            keyPassword "'"$KEY_PASSWORD"'"\
-        }\
-    }' android/app/build.gradle
-
-        # Set the release build type to use our signing config
-        sed -i '/buildTypes {/,/}/ { /release {/a \
-            signingConfig signingConfigs.release
-        }' android/app/build.gradle
-
+        cat >> android/app/build.gradle <<'SIGNING_EOF'
+      android.signingConfigs {
+          release {
+              storeFile file("release-key.jks")
+              storePassword System.getenv("KEYSTORE_PASSWORD")
+              keyAlias System.getenv("KEY_ALIAS")
+              keyPassword System.getenv("KEY_PASSWORD")
+          }
+      }
+      android.buildTypes.release.signingConfig android.signingConfigs.release
+      SIGNING_EOF
         cd android
         chmod +x gradlew
         ./gradlew assembleRelease
-
-        # Copy the release APK to a predictable location for artifacts
         cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/app-signed.apk
       else
-        echo "WARNING: Signing variables not configured — building debug APK."
-        echo "To enable signed release builds, add these CI/CD variables:"
-        echo "  KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD"
+        echo "WARNING: Signing variables not configured - building debug APK."
         cd android
         chmod +x gradlew
         ./gradlew assembleDebug

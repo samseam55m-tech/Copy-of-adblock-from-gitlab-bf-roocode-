@@ -15,10 +15,10 @@ build-apk:
     - npm run build
     - npm install @capacitor/core @capacitor/android
     - npm install @capacitor/cli -D
-    - npx cap init "Roleplay Vault" "com.roleplay.vault" --web-dir dist
+    - "npx cap init \"Roleplay Vault\" \"com.roleplay.vault\" --web-dir dist"
     - npx cap add android
     - npx cap sync android
-    - echo 'configurations.all { resolutionStrategy { exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"; exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8" } }' >> android/app/build.gradle
+    - "echo 'configurations.all { resolutionStrategy { exclude group: \"org.jetbrains.kotlin\", module: \"kotlin-stdlib-jdk7\"; exclude group: \"org.jetbrains.kotlin\", module: \"kotlin-stdlib-jdk8\" } }' >> android/app/build.gradle"
     - |
       if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
         echo "Signing variables detected - building signed release APK"

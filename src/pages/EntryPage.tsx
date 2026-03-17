@@ -545,8 +545,9 @@ export default function EntryPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [fullScreenBlockId, setFullScreenBlockId] = useState<string | null>(null);
-  const [genCounter, setGenCounter] = useState<number>(0);
+  const [genCounter, setGenCounter] = useState<number>(1);
   const savedDefaultBlocksRef = useRef<HeaderBlock[]>([]);
+  const variationsRef = useRef<CardVariation[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -598,12 +599,14 @@ export default function EntryPage() {
         
         const cardVariations = card.variations || [];
         setVariations(cardVariations);
+        variationsRef.current = cardVariations;
         const activeId = card.activeVariationId || 'default';
         setActiveVariationId(activeId);
         
         // Initialize generation counter from saved card or compute from existing variations
+        // Floor of 1 accounts for the implicit G1 (Default) tab
         const savedGenNum = card.nextGenerationNumber || Math.max(1, ...(cardVariations.map(v => {
-          const match = v.name.match(/^G(\d+)$/);
+          const match = v.name.match(/^G(\d+)/);
           return match ? parseInt(match[1], 10) : 0;
         })));
         setGenCounter(savedGenNum);
@@ -815,9 +818,19 @@ export default function EntryPage() {
   const handleAddCardVariation = () => {
     const newVarId = generateId();
     // High-water-mark: always increment from the highest number ever assigned
+    // genCounter starts at 1 (for G1 Default), so first new tab is G2
     const nextNum = genCounter + 1;
     setGenCounter(nextNum);
-    const newVar = {
+    
+    // Save current blocks before switching
+    if (activeVariationId === 'default') {
+      savedDefaultBlocksRef.current = headerBlocks;
+    } else {
+      const updated = variationsRef.current.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v);
+      variationsRef.current = updated;
+    }
+    
+    const newVar: CardVariation = {
       id: newVarId,
       name: `G${nextNum}`,
       headerBlocks: (headerBlocks || []).map(b => ({
@@ -826,43 +839,45 @@ export default function EntryPage() {
         variations: b.variations?.map(v => ({ ...v, id: generateId() })) || []
       }))
     };
-    setVariations(prev => [...(prev || []), newVar]);
+    const newVariations = [...variationsRef.current, newVar];
+    variationsRef.current = newVariations;
+    setVariations(newVariations);
     setActiveVariationId(newVarId);
+    setHeaderBlocks(newVar.headerBlocks);
   };
 
   const handleDeleteCardVariation = () => {
     if (activeVariationId === 'default') return; // Cannot delete default variation
     
-    const newVariations = variations.filter(v => v.id !== activeVariationId);
+    const newVariations = variationsRef.current.filter(v => v.id !== activeVariationId);
+    variationsRef.current = newVariations;
     setVariations(newVariations);
     setActiveVariationId('default');
     
-    // Switch back to default variation blocks
-    if (id) {
-      const card = cards.find(c => c.id === id);
-      if (card) {
-        setHeaderBlocks(card.headerBlocks || []);
-      }
-    }
+    // Switch back to default variation blocks using local ref (never global store)
+    setHeaderBlocks(savedDefaultBlocksRef.current);
     setShowDeleteCardVariationConfirm(false);
   };
 
   const handleSwitchCardVariation = (varId: string) => {
+    // Don't switch if already on this tab
+    if (varId === activeVariationId) return;
+    
     // Save current blocks before switching
     if (activeVariationId === 'default') {
-      // Save default blocks to local ref so we don't lose them
       savedDefaultBlocksRef.current = headerBlocks;
     } else {
-      setVariations(prev => prev.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v));
+      const updated = variationsRef.current.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v);
+      variationsRef.current = updated;
+      setVariations(updated);
     }
     
     setActiveVariationId(varId);
     if (varId === 'default') {
-      // Use locally saved blocks instead of reading from global store
-      // This prevents the freeze when the card hasn't been saved yet
       setHeaderBlocks(savedDefaultBlocksRef.current);
     } else {
-      const targetVar = variations.find(v => v.id === varId);
+      // Read from ref to avoid stale closure
+      const targetVar = variationsRef.current.find(v => v.id === varId);
       if (targetVar) setHeaderBlocks(targetVar.headerBlocks);
     }
   };

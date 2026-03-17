@@ -122,9 +122,15 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
 
   const handleAddVariation = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // High-water-mark: compute next number from stored counter or fallback to scanning existing names
+    const currentMax = block.nextVariationNumber || Math.max(1, ...variations.map(v => {
+      const match = v.name.match(/^V(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    }));
+    const nextNum = currentMax + 1;
     const newVariation = {
       id: generateId(),
-      name: `V${variations.length + 1}`,
+      name: `V${nextNum}`,
       content: ''
     };
     
@@ -135,7 +141,8 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
     
     onUpdate(block.id, {
       variations: newVariations,
-      activeVariationId: newVariation.id
+      activeVariationId: newVariation.id,
+      nextVariationNumber: nextNum
     });
   };
 
@@ -150,6 +157,7 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
     const newVariations = variations.filter(v => v.id !== activeVariationId).map(v => ({ ...v, content: variationContents[v.id] ?? v.content }));
     const newActiveId = newVariations[0].id;
     
+    // Preserve the high-water-mark counter (do NOT decrement on delete)
     onUpdate(block.id, {
       variations: newVariations,
       activeVariationId: newActiveId

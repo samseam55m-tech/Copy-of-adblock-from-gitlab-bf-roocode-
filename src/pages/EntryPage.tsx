@@ -833,11 +833,7 @@ export default function EntryPage() {
     const newVar: CardVariation = {
       id: newVarId,
       name: `G${nextNum}`,
-      headerBlocks: (headerBlocks || []).map(b => ({
-        ...b,
-        id: generateId(),
-        variations: b.variations?.map(v => ({ ...v, id: generateId() })) || []
-      }))
+      headerBlocks: []
     };
     const newVariations = [...variationsRef.current, newVar];
     variationsRef.current = newVariations;

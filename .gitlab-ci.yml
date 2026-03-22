@@ -12,9 +12,9 @@ build-apk:
     - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
   script:
     - npm install
-    - npm run build
     - npm install @capacitor/core @capacitor/android @capacitor-community/google-auth
     - npm install @capacitor/cli -D
+    - npm run build
     - "npx cap init \"Roleplay Vault\" \"com.roleplay.vault\" --web-dir dist"
     - npx cap add android
     - npx cap sync android

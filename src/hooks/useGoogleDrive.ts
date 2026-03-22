@@ -95,15 +95,15 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
   );
 
   // -----------------------------------------------------------------------
-  // Auth – uses @capacitor-community/google-auth (lazy-imported so the
-  // module is only required at runtime on a real device / emulator).
+  // Auth – uses @codetrix-studio/capacitor-google-auth (lazy-imported so
+  // the module is only required at runtime on a real device / emulator).
   // -----------------------------------------------------------------------
 
   const signIn = useCallback(async () => {
     await wrap(async () => {
       // Dynamic import so the web build doesn't hard-fail if the native
       // plugin isn't available during development in a browser.
-      const { GoogleAuth } = await import('@capacitor-community/google-auth');
+      const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
       const result = await GoogleAuth.signIn();
 
       const token = result.authentication.accessToken;
@@ -119,7 +119,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
 
   const signOut = useCallback(async () => {
     await wrap(async () => {
-      const { GoogleAuth } = await import('@capacitor-community/google-auth');
+      const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
       await GoogleAuth.signOut();
       tokenRef.current = null;
       setAccessToken(null);

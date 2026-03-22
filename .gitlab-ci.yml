@@ -23,19 +23,14 @@ build-apk:
     # 1. Add server_client_id to strings.xml
     - sed -i 's|</resources>|    <string name="server_client_id">1037717798765-jscjfdk82phc7sju9jkq53157mik4deg.apps.googleusercontent.com</string>\n</resources>|' android/app/src/main/res/values/strings.xml
 
-    # 2. Find MainActivity.java dynamically (path depends on appId in capacitor.config.ts)
-    - export MAIN_ACTIVITY=$(find android/app/src/main/java -name MainActivity.java)
-    - echo "Found MainActivity at $MAIN_ACTIVITY"
+    # 2. Add GoogleAuth import
+    - sed -i 's|import com.getcapacitor.BridgeActivity;|import com.getcapacitor.BridgeActivity;\nimport com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth;|' $(find android/app/src/main/java -name MainActivity.java)
 
-    # 3. Add GoogleAuth import
-    - sed -i 's|import com.getcapacitor.BridgeActivity;|import com.getcapacitor.BridgeActivity;\nimport com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth;|' "$MAIN_ACTIVITY"
+    # 3. Add onCreate with registerPlugin
+    - sed -i 's|super.onCreate(savedInstanceState);|super.onCreate(savedInstanceState);\n        registerPlugin(GoogleAuth.class);|' $(find android/app/src/main/java -name MainActivity.java)
 
-    # 4. Add onCreate with registerPlugin (Capacitor's default MainActivity has no onCreate)
-    - |
-      sed -i '/public class MainActivity extends BridgeActivity/a \
-      \n    @Override\n    protected void onCreate(android.os.Bundle savedInstanceState) {\n        registerPlugin(GoogleAuth.class);\n        super.onCreate(savedInstanceState);\n    }' "$MAIN_ACTIVITY"
     - echo "--- MainActivity.java after injection ---"
-    - cat "$MAIN_ACTIVITY"
+    - cat $(find android/app/src/main/java -name MainActivity.java)
 
     # --- End Google Auth injection ---
 

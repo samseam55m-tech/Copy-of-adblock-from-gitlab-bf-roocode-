@@ -734,6 +734,36 @@
 }
 
 /* ============================================
+   ACCOUNT MENU PANEL
+   ============================================ */
+@layer components {
+  .account-menu-panel {
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Liquid Glass theme override */
+  .liquid-glass .account-menu-panel {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.75);
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Starry Night theme override */
+  .starry-night .account-menu-panel {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(15, 10, 46, 0.95);
+    border-left: 1px solid rgba(138, 120, 200, 0.15);
+  }
+
+  /* Midnight Peach theme override */
+  .midnight-peach .account-menu-panel {
+    border-left: 1px solid rgba(244, 162, 97, 0.1);
+  }
+}
+
+/* ============================================
    THEME TRANSITIONS on all themed properties
    ============================================ */
 @layer base {

@@ -4,6 +4,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useStore } from '../store';
 import { generateId } from '../utils';
 import { useSwipeable } from 'react-swipeable';
+import AccountMenu from './AccountMenu';
 
 const THEMES = [
   { id: 'light', name: 'Light', icon: Sun, colors: ['#FFFFFF', '#3B82F6', '#E5E5E5'] },
@@ -148,7 +149,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
         )}
 
-        <div className="ml-2 md:ml-4 flex items-center overflow-hidden">
+        <div className="ml-2 md:ml-4 flex items-center overflow-hidden flex-1 min-w-0">
           {breadcrumbs.map((crumb, index) => (
             <React.Fragment key={crumb.path}>
               {index > 0 && <ChevronRight className="w-4 h-4 text-text-muted mx-1.5 shrink-0" />}
@@ -165,6 +166,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </React.Fragment>
           ))}
         </div>
+
+        {/* Account Menu Avatar */}
+        <AccountMenu />
       </header>
 
       {/* Sidebar Overlay */}

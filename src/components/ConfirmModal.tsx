@@ -31,37 +31,39 @@ export default function ConfirmModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-[3px]"
             onClick={onCancel}
           />
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative bg-bg-surface border border-border-main rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="relative bg-bg-surface border border-border-main rounded-2xl p-6 w-full max-w-sm"
+            style={{ boxShadow: 'var(--surface-elevation-3)' }}
           >
             <div className="flex items-start gap-4 mb-6">
-              <div className={`p-3 rounded-full shrink-0 ${isDestructive ? 'bg-red-500/10 text-red-500' : 'bg-bg-surface-hover text-text-main'}`}>
-                <AlertTriangle className="w-6 h-6" />
+              <div className={`p-3 rounded-2xl shrink-0 ${isDestructive ? 'bg-red-500/10 text-red-500' : 'bg-accent/10 text-accent'}`}>
+                <AlertTriangle className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-text-main mb-1">{title}</h3>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-text-main mb-1">{title}</h3>
                 <p className="text-sm text-text-muted leading-relaxed">{message}</p>
               </div>
             </div>
             <div className="flex justify-end gap-3">
               <button 
                 onClick={onCancel}
-                className="px-4 py-2 rounded-xl font-medium text-text-muted hover:bg-bg-surface-hover hover:text-text-main transition-colors"
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:bg-bg-surface-hover hover:text-text-main transition-colors"
               >
                 {cancelText}
               </button>
               <button 
                 onClick={onConfirm}
-                className={`px-4 py-2 rounded-xl font-medium transition-colors ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   isDestructive 
-                    ? 'bg-red-500 text-text-main hover:bg-red-600' 
-                    : 'bg-text-main text-bg-main hover:bg-text-secondary'
+                    ? 'bg-red-500 text-white hover:bg-red-600' 
+                    : 'bg-accent text-white hover:opacity-90'
                 }`}
               >
                 {confirmText}

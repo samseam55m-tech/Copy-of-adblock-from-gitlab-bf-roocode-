@@ -15,7 +15,6 @@ export default function Statistics() {
     const allStats: any[] = [];
 
     activeCards.forEach(card => {
-      // Process G1 (Default)
       (card.headerBlocks || []).forEach(block => {
         if (block.copyCount && block.copyCount > 0) {
           allStats.push({
@@ -45,7 +44,6 @@ export default function Statistics() {
         }
       });
 
-      // Process other generations
       if (card.variations) {
         card.variations.forEach(gen => {
           (gen.headerBlocks || []).forEach(block => {
@@ -127,29 +125,29 @@ export default function Statistics() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto p-4 pb-24">
-      <div className="flex items-center justify-between mb-6 px-2">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 px-1">
         <div className="flex items-center gap-3">
-          <BarChart3 className="w-8 h-8 text-text-muted" />
-          <h2 className="text-2xl font-bold">Copy Statistics</h2>
+          <div className="w-10 h-10 rounded-2xl bg-accent/10 flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">Statistics</h2>
+            <p className="text-xs text-text-muted">Copy counts across your content</p>
+          </div>
         </div>
         
-        <div className="flex bg-bg-surface rounded-xl p-1 border border-border-main">
+        <div className="pill-tabs">
           <button
             onClick={() => setActiveTab('cards')}
-            className={cn(
-              "px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2",
-              activeTab === 'cards' ? "bg-bg-surface-hover text-text-main" : "text-text-muted hover:text-text-main"
-            )}
+            className={`pill-tab ${activeTab === 'cards' ? 'active' : ''}`}
           >
             <FileText className="w-4 h-4" />
             Cards
           </button>
           <button
             onClick={() => setActiveTab('prompts')}
-            className={cn(
-              "px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2",
-              activeTab === 'prompts' ? "bg-bg-surface-hover text-text-main" : "text-text-muted hover:text-text-main"
-            )}
+            className={`pill-tab ${activeTab === 'prompts' ? 'active' : ''}`}
           >
             <ImageIcon className="w-4 h-4" />
             Prompts
@@ -158,13 +156,17 @@ export default function Statistics() {
       </div>
 
       {currentStats.length === 0 ? (
-        <div className="h-full flex flex-col items-center justify-center text-text-muted mt-20">
-          <Copy className="w-16 h-16 opacity-20 mb-4" />
-          <p className="font-medium text-base">No copies recorded yet</p>
-          <p className="text-sm mt-1 opacity-70">Copy header blocks to see statistics here.</p>
+        <div className="h-full flex flex-col items-center justify-center text-text-muted mt-16">
+          <div className="float-gentle">
+            <div className="w-20 h-20 rounded-3xl bg-bg-surface border border-border-main/50 flex items-center justify-center mb-6" style={{ boxShadow: 'var(--surface-elevation-2)' }}>
+              <Copy className="w-9 h-9 opacity-25" />
+            </div>
+          </div>
+          <p className="font-semibold text-base text-text-main mb-1">No copies yet</p>
+          <p className="text-sm opacity-70 max-w-[220px] text-center leading-relaxed">Copy header blocks to see your statistics here.</p>
         </div>
       ) : (
-        <div className="space-y-4 max-w-3xl mx-auto w-full">
+        <div className="space-y-3 max-w-3xl mx-auto w-full">
           {currentStats.map((stat, index) => (
             <StatItem
               key={`${stat.parentId}-${stat.id}-${stat.generationName || 'default'}-${stat.variationName}`}

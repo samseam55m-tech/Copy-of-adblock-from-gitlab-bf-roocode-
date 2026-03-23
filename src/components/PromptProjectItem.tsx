@@ -58,7 +58,7 @@ export const PromptProjectItem = React.memo(function PromptProjectItem({
   return (
     <div
       ref={inViewRef}
-      style={style}
+      style={{ ...style, boxShadow: isSelected ? undefined : 'var(--surface-elevation-1)' }}
       onClick={() => onClick(project.id)}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -70,22 +70,26 @@ export const PromptProjectItem = React.memo(function PromptProjectItem({
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}
       className={cn(
-        "bg-bg-surface border rounded-3xl p-5 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all aspect-square relative group select-none",
-        isSelected ? "border-accent bg-bg-surface-hover/80 shadow-lg" : "border-border-main hover:bg-bg-surface-hover hover:border-border-main hover:shadow-xl"
+        "bg-bg-surface border rounded-[var(--card-radius)] p-5 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all aspect-square relative group select-none",
+        isSelected 
+          ? "border-accent ring-2 ring-accent/30 bg-accent/5" 
+          : "border-border-main/40 hover:bg-bg-surface-hover hover:border-border-main"
       )}
     >
       {inView ? (
         <div ref={contentRef} className="flex flex-col items-center justify-center w-full h-full">
           {project.isPinned && !isSelected && (
-            <div className="absolute top-3 left-3 text-text-muted">
+            <div className="absolute top-3 left-3 text-text-muted/50">
               <Pin className="w-3.5 h-3.5" />
             </div>
           )}
 
-          <BookOpen className={cn("w-12 h-12 transition-colors", project.color || "text-text-muted group-hover:text-text-secondary")} />
+          <div className="w-14 h-14 rounded-2xl bg-bg-main/50 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <BookOpen className={cn("w-8 h-8 transition-colors", project.color || "text-text-muted group-hover:text-accent")} />
+          </div>
           
-          <div className="text-center w-full px-2 mt-3">
-            <span className="font-semibold text-text-main line-clamp-1">{project.name}</span>
+          <div className="text-center w-full px-2 mt-1">
+            <span className="font-semibold text-sm text-text-main line-clamp-1">{project.name}</span>
             <span className="text-xs text-text-muted mt-1 block">{project.blocks?.length || 0} blocks</span>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,7 +31,7 @@ interface UseGoogleDriveReturn {
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 
-  // Drive helpers - all operate on the hidden appDataFolder
+  // Drive helpers – all operate on the hidden appDataFolder
   findVaultFile: () => Promise<string | null>;
   createVaultFile: (jsonString: string) => Promise<string>;
   updateVaultFile: (fileId: string, jsonString: string) => Promise<void>;
@@ -50,57 +51,29 @@ const DRIVE_API = 'https://www.googleapis.com';
 const DRIVE_FILES = `${DRIVE_API}/drive/v3/files`;
 const DRIVE_UPLOAD = `${DRIVE_API}/upload/drive/v3/files`;
 
-// Google OAuth client ID from capacitor.config.ts
 const GOOGLE_CLIENT_ID =
   '1037717798765-jscjfdk82phc7sju9jkq53157mik4deg.apps.googleusercontent.com';
-
-const SCOPES = 'email profile https://www.googleapis.com/auth/drive.appdata';
+const GOOGLE_SCOPES = [
+  'email',
+  'profile',
+  'https://www.googleapis.com/auth/drive.appdata',
+];
 
 // ---------------------------------------------------------------------------
-// GIS script loader
+// One-time plugin initialization
 // ---------------------------------------------------------------------------
 
-let gsiLoadPromise: Promise<void> | null = null;
+let initialized = false;
 
-function loadGsiScript(): Promise<void> {
-  if (gsiLoadPromise) return gsiLoadPromise;
-
-  gsiLoadPromise = new Promise<void>((resolve, reject) => {
-    // Already loaded (e.g. via index.html script tag)
-    if (typeof google !== 'undefined' && google.accounts) {
-      resolve();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Identity Services SDK'));
-    document.head.appendChild(script);
+function ensureInitialized() {
+  if (initialized) return;
+  GoogleAuth.initialize({
+    clientId: GOOGLE_CLIENT_ID,
+    scopes: GOOGLE_SCOPES,
+    grantOfflineAccess: true,
   });
-
-  return gsiLoadPromise;
+  initialized = true;
 }
-
-// ---------------------------------------------------------------------------
-// Declare the global `google` namespace so TypeScript is happy
-// ---------------------------------------------------------------------------
-
-declare const google: {
-  accounts: {
-    oauth2: {
-      initTokenClient: (config: {
-        client_id: string;
-        scope: string;
-        callback: (response: { access_token?: string; error?: string }) => void;
-        error_callback?: (error: { type: string; message?: string }) => void;
-      }) => { requestAccessToken: () => void };
-      revoke: (token: string, done?: () => void) => void;
-    };
-  };
-};
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -147,71 +120,29 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
   );
 
   // -----------------------------------------------------------------------
-  // Fetch user profile from the access token
-  // -----------------------------------------------------------------------
-
-  const fetchUserProfile = useCallback(async (token: string): Promise<GoogleUser> => {
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error(`Failed to fetch user profile: ${res.status}`);
-    const data = await res.json();
-    return {
-      email: data.email,
-      displayName: data.name ?? data.email,
-      photoUrl: data.picture ?? undefined,
-    };
-  }, []);
-
-  // -----------------------------------------------------------------------
-  // Auth - Google Identity Services (GIS) OAuth2 implicit flow
+  // Auth – uses @codetrix-studio/capacitor-google-auth native plugin
   // -----------------------------------------------------------------------
 
   const signIn = useCallback(async () => {
     await wrap(async () => {
-      await loadGsiScript();
+      ensureInitialized();
+      const result = await GoogleAuth.signIn();
 
-      return new Promise<void>((resolve, reject) => {
-        const client = google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: SCOPES,
-          callback: async (response) => {
-            if (response.error || !response.access_token) {
-              reject(new Error(response.error ?? 'Sign-in failed: no access token received.'));
-              return;
-            }
-
-            const token = response.access_token;
-            tokenRef.current = token;
-            setAccessToken(token);
-
-            try {
-              const profile = await fetchUserProfile(token);
-              setUser(profile);
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
-          },
-          error_callback: (err) => {
-            reject(new Error(err.message ?? 'Google sign-in was cancelled or failed.'));
-          },
-        });
-
-        // This opens the Google consent popup
-        client.requestAccessToken();
+      const token = result.authentication.accessToken;
+      tokenRef.current = token;
+      setAccessToken(token);
+      setUser({
+        email: result.email,
+        displayName: result.name ?? result.email,
+        photoUrl: result.imageUrl ?? undefined,
       });
     });
-  }, [wrap, fetchUserProfile]);
+  }, [wrap]);
 
   const signOut = useCallback(async () => {
     await wrap(async () => {
-      const token = tokenRef.current;
-      if (token) {
-        // Revoke the token so the user is fully signed out
-        await loadGsiScript();
-        google.accounts.oauth2.revoke(token);
-      }
+      ensureInitialized();
+      await GoogleAuth.signOut();
       tokenRef.current = null;
       setAccessToken(null);
       setUser(null);
@@ -219,7 +150,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
   }, [wrap]);
 
   // -----------------------------------------------------------------------
-  // Drive API - low-level helpers
+  // Drive API – low-level helpers
   // -----------------------------------------------------------------------
 
   /**
@@ -333,7 +264,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
   // -----------------------------------------------------------------------
 
   /**
-   * Upload vault data - creates the file if it doesn't exist, otherwise
+   * Upload vault data – creates the file if it doesn't exist, otherwise
    * overwrites it. Returns the file ID.
    */
   const uploadVaultData = useCallback(

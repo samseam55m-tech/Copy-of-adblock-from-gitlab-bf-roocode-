@@ -109,7 +109,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
       try {
         return await fn();
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = err instanceof Error ? err.message : JSON.stringify(err);
         setError(msg);
         throw err;
       } finally {

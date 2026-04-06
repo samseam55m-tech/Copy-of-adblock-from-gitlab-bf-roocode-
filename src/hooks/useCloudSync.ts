@@ -28,7 +28,9 @@ export function useCloudSync() {
       const json = JSON.stringify(localState);
       await drive.uploadVaultData(json);
       setSyncStatus('success');
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('[CloudSync] pushToCloud failed:', msg);
       setSyncStatus('error');
     }
   }, [drive]);
@@ -50,7 +52,9 @@ export function useCloudSync() {
       await localforage.setItem('appState', parsed);
       setSyncStatus('success');
       return parsed;
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('[CloudSync] pullFromCloud failed:', msg);
       setSyncStatus('error');
       return null;
     }

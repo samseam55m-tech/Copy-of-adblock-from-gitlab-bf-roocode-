@@ -87,17 +87,23 @@ export default function AccountMenu() {
         )}
       </button>
 
-      {/* Backdrop */}
+      {/* Full-screen overlay wrapper — forces a new stacking context above everything */}
       <div
-        className={`fixed inset-0 bg-black/50 z-[70] transition-opacity duration-300 ${
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 z-[9999] isolate ${
+          open ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
-        onClick={() => setOpen(false)}
-      />
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${
+            open ? 'opacity-100' : 'opacity-0'
+          }`}
+          onClick={() => setOpen(false)}
+        />
 
       {/* Sliding Overlay Panel (from right) */}
       <div
-        className={`account-menu-panel fixed inset-y-0 right-0 w-full max-w-sm bg-bg-main z-[80] flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        className={`account-menu-panel fixed inset-y-0 right-0 w-full max-w-sm bg-gray-900 z-[10000] flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-2xl ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}
@@ -235,6 +241,7 @@ export default function AccountMenu() {
           </p>
         </div>
       </div>
+      </div>{/* end overlay wrapper */}
     </>
   );
 }

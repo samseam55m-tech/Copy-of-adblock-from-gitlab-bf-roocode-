@@ -76,6 +76,28 @@ function ensureInitialized() {
 }
 
 // ---------------------------------------------------------------------------
+// Error extraction helper – Capacitor native errors can be anything:
+// Error instances, plain objects with .message, bare strings, numbers, null.
+// ---------------------------------------------------------------------------
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object') {
+    // Capacitor often returns { message: '...', code: '...' }
+    const obj = err as Record<string, unknown>;
+    if (typeof obj.message === 'string' && obj.message) return obj.message;
+    if (typeof obj.errorMessage === 'string' && obj.errorMessage) return obj.errorMessage;
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return Object.prototype.toString.call(err);
+    }
+  }
+  return String(err || 'UNKNOWN_NATIVE_ERROR');
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
@@ -109,7 +131,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
       try {
         return await fn();
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : JSON.stringify(err);
+        const msg = extractErrorMessage(err);
         setError(msg);
         throw err;
       } finally {

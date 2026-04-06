@@ -25,7 +25,11 @@ function SyncStatusBadge({ status }: { status: SyncStatus }) {
 
 export default function AccountMenu() {
   const [open, setOpen] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
   const { user, loading, error, signIn, signOut, syncStatus, pushToCloud, pullFromCloud } = useCloudSync();
+
+  // Combine both error sources so the UI always shows the real message
+  const displayError = error || signInError;
 
   const isSyncing = syncStatus === 'syncing';
 
@@ -49,10 +53,20 @@ export default function AccountMenu() {
   }, [open]);
 
   const handleSignIn = useCallback(async () => {
+    setSignInError(null);
     try {
       await signIn();
-    } catch {
-      // error state is set by useCloudSync and displayed in the UI below
+    } catch (err: unknown) {
+      // Safety net: extract the error message here too in case
+      // the hook's error state was cleared or never set.
+      const msg = err instanceof Error
+        ? err.message
+        : (typeof err === 'string'
+          ? err
+          : (err && typeof err === 'object' && 'message' in err && typeof (err as Record<string, unknown>).message === 'string'
+            ? (err as Record<string, unknown>).message as string
+            : String(err || 'UNKNOWN_NATIVE_ERROR')));
+      setSignInError(msg);
     }
   }, [signIn]);
 
@@ -152,10 +166,10 @@ export default function AccountMenu() {
                 Sign in with your Google account to back up and restore your vault data across devices.
               </p>
 
-              {error && (
+              {displayError && (
                 <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 max-w-[280px]">
                   <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                  <p className="text-red-400 text-xs text-left">{error}</p>
+                  <p className="text-red-400 text-xs text-left break-all">{displayError}</p>
                 </div>
               )}
 

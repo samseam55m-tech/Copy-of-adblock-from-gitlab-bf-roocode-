@@ -146,20 +146,43 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
   // -----------------------------------------------------------------------
 
   const signIn = useCallback(async () => {
-    await wrap(async () => {
+    try {
       ensureInitialized();
+    } catch (initErr: unknown) {
+      const initMsg = extractErrorMessage(initErr);
+      window.alert('[DEBUG] GoogleAuth.initialize() failed:\n' + initMsg);
+      setError(initMsg);
+      throw initErr;
+    }
+
+    try {
       const result = await GoogleAuth.signIn();
+
+      // Debug: show the raw result so we can verify the shape
+      if (!result || !result.authentication || !result.authentication.accessToken) {
+        const resultDump = JSON.stringify(result, null, 2);
+        window.alert('[DEBUG] signIn result missing accessToken:\n' + resultDump);
+        throw new Error('signIn returned no accessToken. Raw result: ' + resultDump);
+      }
 
       const token = result.authentication.accessToken;
       tokenRef.current = token;
       setAccessToken(token);
+      setLoading(false);
+      setError(null);
       setUser({
         email: result.email,
         displayName: result.name ?? result.email,
         photoUrl: result.imageUrl ?? undefined,
       });
-    });
-  }, [wrap]);
+    } catch (signInErr: unknown) {
+      const msg = extractErrorMessage(signInErr);
+      window.alert('[DEBUG] GoogleAuth.signIn() failed:\n' + msg);
+      setError(msg);
+      setLoading(false);
+      throw signInErr;
+    }
+  }, []);
 
   const signOut = useCallback(async () => {
     await wrap(async () => {

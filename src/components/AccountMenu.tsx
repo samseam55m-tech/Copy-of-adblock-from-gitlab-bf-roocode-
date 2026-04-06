@@ -57,15 +57,20 @@ export default function AccountMenu() {
     try {
       await signIn();
     } catch (err: unknown) {
-      // Safety net: extract the error message here too in case
-      // the hook's error state was cleared or never set.
-      const msg = err instanceof Error
-        ? err.message
-        : (typeof err === 'string'
-          ? err
-          : (err && typeof err === 'object' && 'message' in err && typeof (err as Record<string, unknown>).message === 'string'
-            ? (err as Record<string, unknown>).message as string
-            : String(err || 'UNKNOWN_NATIVE_ERROR')));
+      let msg: string;
+      try {
+        if (err instanceof Error) {
+          msg = err.message + (err.stack ? '\n\nStack: ' + err.stack : '');
+        } else if (typeof err === 'string') {
+          msg = err;
+        } else {
+          msg = JSON.stringify(err, null, 2) || String(err);
+        }
+      } catch {
+        msg = 'Error could not be serialized: ' + Object.prototype.toString.call(err);
+      }
+      // Force it on screen so we can always see it
+      window.alert('[DEBUG] handleSignIn caught:\n' + msg);
       setSignInError(msg);
     }
   }, [signIn]);

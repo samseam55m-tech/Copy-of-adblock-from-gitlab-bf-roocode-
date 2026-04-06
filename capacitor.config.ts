@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.roleplayvault.app',
+  appId: 'com.roleplay.vault',
   appName: 'Roleplay Vault',
   webDir: 'dist',
   plugins: {

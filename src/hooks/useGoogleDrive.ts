@@ -70,7 +70,6 @@ function ensureInitialized() {
   GoogleAuth.initialize({
     clientId: GOOGLE_CLIENT_ID,
     scopes: GOOGLE_SCOPES,
-    grantOfflineAccess: true,
   });
   initialized = true;
 }

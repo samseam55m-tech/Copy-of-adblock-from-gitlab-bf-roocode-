@@ -10,7 +10,6 @@ const config: CapacitorConfig = {
       clientId: '1037717798765-jscjfdk82phc7sju9jkq53157mik4deg.apps.googleusercontent.com',
       androidClientId: '1037717798765-tfjlomgaaevedv8f7grs702mg5nthe42.apps.googleusercontent.com',
       serverClientId: '1037717798765-jscjfdk82phc7sju9jkq53157mik4deg.apps.googleusercontent.com',
-      forceCodeForRefreshToken: true,
     },
   },
 };

@@ -101,32 +101,36 @@ export default function RecycleBin() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
-      <div className="p-4 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--header-border)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center">
-            <Trash2 className="w-5 h-5 text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold tracking-tight">Recycle Bin</h2>
-        </div>
+      <div className="p-4 flex items-center justify-between shrink-0 border-b border-border-main">
+        <h2 className="text-2xl font-bold">Recycle Bin</h2>
         
-        <div className="pill-tabs">
+        <div className="flex bg-bg-surface rounded-xl p-1 border border-border-main">
           <button
             onClick={() => setActiveTab('cards')}
-            className={`pill-tab ${activeTab === 'cards' ? 'active' : ''}`}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2",
+              activeTab === 'cards' ? "bg-bg-surface-hover text-text-main" : "text-text-muted hover:text-text-main"
+            )}
           >
             <FileText className="w-4 h-4" />
             Cards
           </button>
           <button
             onClick={() => setActiveTab('prompts')}
-            className={`pill-tab ${activeTab === 'prompts' ? 'active' : ''}`}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2",
+              activeTab === 'prompts' ? "bg-bg-surface-hover text-text-main" : "text-text-muted hover:text-text-main"
+            )}
           >
             <ImageIcon className="w-4 h-4" />
             Prompts
           </button>
           <button
             onClick={() => setActiveTab('blocks')}
-            className={`pill-tab ${activeTab === 'blocks' ? 'active' : ''}`}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2",
+              activeTab === 'blocks' ? "bg-bg-surface-hover text-text-main" : "text-text-muted hover:text-text-main"
+            )}
           >
             <AlignLeft className="w-4 h-4" />
             Blocks
@@ -150,13 +154,9 @@ export default function RecycleBin() {
             </div>
             
             {deletedCards.length === 0 ? (
-              <div className="text-center text-text-muted mt-16">
-                <div className="float-gentle inline-block">
-                  <div className="w-16 h-16 rounded-2xl bg-bg-surface border border-border-main/50 flex items-center justify-center mx-auto mb-5" style={{ boxShadow: 'var(--surface-elevation-2)' }}>
-                    <Trash2 className="w-7 h-7 opacity-25" />
-                  </div>
-                </div>
-                <p className="font-semibold text-text-main">No deleted cards</p>
+              <div className="text-center text-text-muted mt-20">
+                <Trash2 className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                <p className="font-medium">No deleted cards</p>
                 <p className="text-sm mt-1 opacity-70">Deleted cards will appear here for 90 days.</p>
               </div>
             ) : (

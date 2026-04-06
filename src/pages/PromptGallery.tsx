@@ -182,7 +182,7 @@ export default function PromptGallery() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      <div className="sticky top-0 z-30 p-4 pb-4 flex flex-col gap-3 shrink-0" style={{ background: 'var(--header-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 1px 0 0 var(--header-border)' }}>
+      <div className="sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 pb-4 flex flex-col gap-3 shrink-0" style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -271,7 +271,7 @@ export default function PromptGallery() {
         <div className="space-y-8">
           {pinnedProjects.length > 0 && (
             <div>
-              <h3 className="section-label">Pinned</h3>
+              <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 px-2">Pinned</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {pinnedProjects.map(project => {
                   const isSelected = selectedProjects.has(project.id);
@@ -297,7 +297,7 @@ export default function PromptGallery() {
 
           {unpinnedProjects.length > 0 && (
             <div>
-              {pinnedProjects.length > 0 && <h3 className="section-label">Others</h3>}
+              {pinnedProjects.length > 0 && <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 px-2">Others</h3>}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {unpinnedProjects.map(project => {
                   const isSelected = selectedProjects.has(project.id);
@@ -320,14 +320,10 @@ export default function PromptGallery() {
       )}
 
       {filteredProjects.length === 0 && (
-        <div className="h-full flex flex-col items-center justify-center text-text-muted mt-16">
-          <div className="float-gentle">
-            <div className="w-20 h-20 rounded-3xl bg-bg-surface border border-border-main/50 flex items-center justify-center mb-6" style={{ boxShadow: 'var(--surface-elevation-2)' }}>
-              <BookOpen className="w-9 h-9 opacity-25" />
-            </div>
-          </div>
-          <p className="font-semibold text-base text-text-main mb-1">{searchQuery ? 'No prompts found' : 'No prompt projects yet'}</p>
-          <p className="text-sm opacity-70 max-w-[220px] text-center leading-relaxed">{searchQuery ? 'Try a different search term.' : 'Tap + to create your first prompt project.'}</p>
+        <div className="h-full flex flex-col items-center justify-center text-text-muted mt-20">
+          <BookOpen className="w-16 h-16 opacity-20 mb-4" />
+          <p className="font-medium text-base">{searchQuery ? 'No prompts match your search.' : 'No prompt projects yet'}</p>
+          <p className="text-sm mt-1 opacity-70">{searchQuery ? 'Try a different search.' : 'Tap + to create your first prompt project.'}</p>
         </div>
       )}
       </div>
@@ -335,23 +331,20 @@ export default function PromptGallery() {
       {/* Floating Action Button */}
       <button 
         onClick={() => setShowCreateGroup(true)}
-        className="fab-button bg-accent text-white"
+        className="fab-button bg-text-main text-bg-main"
       >
-        <Plus className="w-7 h-7" />
+        <Plus className="w-8 h-8" />
       </button>
 
       {/* Advanced Search Modal */}
       {showAdvancedSearch && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div 
-            className="bg-bg-surface rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-md border border-border-main flex flex-col max-h-[90vh]"
-            style={{ paddingBottom: 'calc(1.5rem + var(--safe-bottom))', boxShadow: 'var(--surface-elevation-3)' }}
+            className="bg-bg-surface rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-md border border-border-main shadow-2xl flex flex-col max-h-[90vh]"
+            style={{ paddingBottom: 'calc(1.5rem + var(--safe-bottom))' }}
           >
             <div className="flex justify-between items-center mb-6 shrink-0">
-              <div>
-                <h3 className="text-lg font-bold">Filters</h3>
-                <p className="text-xs text-text-muted mt-0.5">Refine your search</p>
-              </div>
+              <h3 className="text-lg font-semibold">Advanced Search</h3>
               <button onClick={() => setShowAdvancedSearch(false)}><X className="w-5 h-5" /></button>
             </div>
             

@@ -202,7 +202,7 @@ export default function ProjectFiles() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      <div className="sticky top-0 z-30 p-4 pb-4 flex flex-col gap-3 shrink-0" style={{ background: 'var(--header-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 1px 0 0 var(--header-border)' }}>
+      <div className="sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 pb-4 flex flex-col gap-3 shrink-0" style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -291,7 +291,7 @@ export default function ProjectFiles() {
         <div className="space-y-8">
           {pinnedProjects.length > 0 && (
             <div>
-              <h3 className="section-label">Pinned</h3>
+              <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 px-2">Pinned</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {pinnedProjects.map(project => {
                   const projectTags = getProjectTags(project.cardIds).slice(0, 3);
@@ -319,7 +319,7 @@ export default function ProjectFiles() {
 
           {unpinnedProjects.length > 0 && (
             <div>
-              {pinnedProjects.length > 0 && <h3 className="section-label">Others</h3>}
+              {pinnedProjects.length > 0 && <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 px-2">Others</h3>}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {unpinnedProjects.map(project => {
                   const projectTags = getProjectTags(project.cardIds).slice(0, 3);
@@ -344,14 +344,10 @@ export default function ProjectFiles() {
       )}
 
       {filteredProjects.length === 0 && (
-        <div className="h-full flex flex-col items-center justify-center text-text-muted mt-16">
-          <div className="float-gentle">
-            <div className="w-20 h-20 rounded-3xl bg-bg-surface border border-border-main/50 flex items-center justify-center mb-6" style={{ boxShadow: 'var(--surface-elevation-2)' }}>
-              <Folder className="w-9 h-9 opacity-25" />
-            </div>
-          </div>
-          <p className="font-semibold text-base text-text-main mb-1">{searchQuery ? 'No projects found' : 'No projects yet'}</p>
-          <p className="text-sm opacity-70 max-w-[220px] text-center leading-relaxed">{searchQuery ? 'Try a different search term.' : 'Tap + to create your first project.'}</p>
+        <div className="h-full flex flex-col items-center justify-center text-text-muted mt-20">
+          <Folder className="w-16 h-16 opacity-20 mb-4" />
+          <p className="font-medium text-base">{searchQuery ? 'No projects match your search.' : 'No projects yet'}</p>
+          <p className="text-sm mt-1 opacity-70">{searchQuery ? 'Try a different search.' : 'Tap + to create your first project.'}</p>
         </div>
       )}
       </div>
@@ -359,9 +355,9 @@ export default function ProjectFiles() {
       {/* Floating Action Button */}
       <button 
         onClick={() => setShowCreateGroup(true)}
-        className="fab-button bg-accent text-white"
+        className="fab-button bg-text-main text-bg-main"
       >
-        <Plus className="w-7 h-7" />
+        <Plus className="w-8 h-8" />
       </button>
 
       {/* Advanced Search Modal */}

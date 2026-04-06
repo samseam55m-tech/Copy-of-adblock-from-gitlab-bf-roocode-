@@ -37,31 +37,31 @@ export const StatItem = React.memo(function StatItem({ stat, index, onClick }: S
   return (
     <div
       ref={inViewRef}
-      style={{ ...style, boxShadow: 'var(--surface-elevation-1)' }}
+      style={style}
       onClick={() => onClick(stat)}
-      className="bg-bg-surface border border-border-main/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:bg-bg-surface-hover transition-all group"
+      className="bg-bg-surface border border-border-main rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:bg-bg-surface-hover transition-colors"
     >
       {inView ? (
         <div ref={contentRef} className="flex items-center justify-between w-full h-full">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-bold text-sm shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full bg-bg-surface-hover flex items-center justify-center text-text-muted font-bold text-sm shrink-0">
               #{index + 1}
             </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-sm text-text-main line-clamp-1">
+            <div>
+              <h3 className="font-semibold text-text-main line-clamp-1">
                 {stat.title} 
-                <span className="text-xs text-text-muted ml-2 font-normal">
+                <span className="text-xs text-text-muted ml-2">
                   ({stat.generationName ? `${stat.generationName} - ` : ''}{stat.variationName})
                 </span>
               </h3>
-              <p className="text-xs text-text-muted line-clamp-1 mt-0.5">
+              <p className="text-sm text-text-muted line-clamp-1">
                 from {stat.parentName}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-text-muted bg-bg-main px-3 py-1.5 rounded-xl border border-border-main/50 shrink-0 ml-3 group-hover:border-accent/30 transition-colors">
-            <Copy className="w-3.5 h-3.5" />
-            <span className="font-semibold text-sm text-text-main">{stat.copyCount}</span>
+          <div className="flex items-center gap-2 text-text-muted bg-bg-main px-3 py-1.5 rounded-lg border border-border-main shrink-0">
+            <Copy className="w-4 h-4" />
+            <span className="font-medium">{stat.copyCount}</span>
           </div>
         </div>
       ) : null}

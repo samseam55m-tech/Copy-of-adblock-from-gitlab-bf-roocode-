@@ -8,7 +8,7 @@ import { useGoogleDrive } from './useGoogleDrive';
  * `useGoogleDrive`.
  *
  * Usage:
- *   const { syncStatus, pushToCloud, pullFromCloud, ... } = useCloudSync();
+ *   const { syncStatus, pushToCloud, pullFromCloud, deleteCloudData, ... } = useCloudSync();
  */
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
@@ -60,6 +60,21 @@ export function useCloudSync() {
     }
   }, [drive]);
 
+  // -----------------------------------------------------------------------
+  // Delete vault data from Google Drive
+  // -----------------------------------------------------------------------
+  const deleteCloudData = useCallback(async () => {
+    setSyncStatus('syncing');
+    try {
+      await drive.deleteVaultData();
+      setSyncStatus('success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('[CloudSync] deleteCloudData failed:', msg);
+      setSyncStatus('error');
+    }
+  }, [drive]);
+
   return {
     /** Re-exported from useGoogleDrive for convenience */
     user: drive.user,
@@ -72,5 +87,6 @@ export function useCloudSync() {
     syncStatus,
     pushToCloud,
     pullFromCloud,
+    deleteCloudData,
   };
 }

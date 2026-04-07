@@ -40,6 +40,7 @@ interface UseGoogleDriveReturn {
   // Convenience wrappers
   uploadVaultData: (jsonString: string) => Promise<string>;
   downloadVaultData: () => Promise<string | null>;
+  deleteVaultData: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -333,6 +334,27 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
     return downloadVaultFile(existingId);
   }, [findVaultFile, downloadVaultFile]);
 
+  /**
+   * Permanently delete the vault file from Google Drive.
+   * If no vault file exists, this is a no-op.
+   */
+  const deleteVaultData = useCallback(async (): Promise<void> => {
+    const existingId = await findVaultFile();
+    if (!existingId) return;
+
+    await wrap(async () => {
+      const token = requireToken();
+      const res = await fetch(`${DRIVE_FILES}/${existingId}`, {
+        method: 'DELETE',
+        headers: headers(token),
+      });
+      // 204 No Content is the expected success response
+      if (!res.ok && res.status !== 204) {
+        throw new Error(`Drive delete failed: ${res.status} ${await res.text()}`);
+      }
+    });
+  }, [findVaultFile, wrap]);
+
   // -----------------------------------------------------------------------
   // Public API
   // -----------------------------------------------------------------------
@@ -350,5 +372,6 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
     downloadVaultFile,
     uploadVaultData,
     downloadVaultData,
+    deleteVaultData,
   };
 }

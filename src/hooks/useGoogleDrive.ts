@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // ---------------------------------------------------------------------------
@@ -26,6 +26,8 @@ interface UseGoogleDriveReturn {
   loading: boolean;
   /** Last error message, cleared on next successful operation */
   error: string | null;
+  /** True while the silent-login attempt is in progress */
+  restoring: boolean;
 
   // Auth
   signIn: () => Promise<void>;
@@ -59,6 +61,8 @@ const GOOGLE_SCOPES = [
   'profile',
   'https://www.googleapis.com/auth/drive.appdata',
 ];
+
+const SESSION_FLAG_KEY = 'googleAuth_hasSignedIn';
 
 // ---------------------------------------------------------------------------
 // One-time plugin initialization
@@ -106,9 +110,63 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   // Keep a ref so Drive helpers always see the latest token without stale closures
   const tokenRef = useRef<string | null>(null);
+
+  // -----------------------------------------------------------------------
+  // Silent login on mount – restore session if user previously signed in
+  // -----------------------------------------------------------------------
+
+  useEffect(() => {
+    const tryRestore = async () => {
+      const hasSignedIn = localStorage.getItem(SESSION_FLAG_KEY);
+      if (!hasSignedIn) return;
+
+      setRestoring(true);
+      try {
+        ensureInitialized();
+        const result = await GoogleAuth.refresh();
+
+        if (result && result.accessToken) {
+          tokenRef.current = result.accessToken;
+          setAccessToken(result.accessToken);
+
+          // Try to get user profile from a silent signIn or from the token
+          // GoogleAuth.refresh() only returns the token, so we attempt signIn silently
+          // to get user info. If that fails, we still have the token.
+          try {
+            const userResult = await GoogleAuth.signIn();
+            if (userResult && userResult.authentication?.accessToken) {
+              tokenRef.current = userResult.authentication.accessToken;
+              setAccessToken(userResult.authentication.accessToken);
+              setUser({
+                email: userResult.email,
+                displayName: userResult.name ?? userResult.email,
+                photoUrl: userResult.imageUrl ?? undefined,
+              });
+            }
+          } catch {
+            // signIn may fail if user needs to re-consent, but we still have the refreshed token
+            // We'll show the user as signed in with limited info
+            setUser({
+              email: 'Signed In',
+              displayName: 'Google User',
+              photoUrl: undefined,
+            });
+          }
+        }
+      } catch {
+        // Silent restore failed – clear the flag so we don't retry every mount
+        localStorage.removeItem(SESSION_FLAG_KEY);
+      } finally {
+        setRestoring(false);
+      }
+    };
+
+    tryRestore();
+  }, []);
 
   // -----------------------------------------------------------------------
   // Internal helpers
@@ -175,6 +233,9 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
         displayName: result.name ?? result.email,
         photoUrl: result.imageUrl ?? undefined,
       });
+
+      // Persist session flag for silent restore on next app launch
+      localStorage.setItem(SESSION_FLAG_KEY, 'true');
     } catch (signInErr: unknown) {
       const msg = extractErrorMessage(signInErr);
       window.alert('[DEBUG] GoogleAuth.signIn() failed:\n' + msg);
@@ -191,6 +252,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
       tokenRef.current = null;
       setAccessToken(null);
       setUser(null);
+      localStorage.removeItem(SESSION_FLAG_KEY);
     });
   }, [wrap]);
 
@@ -364,6 +426,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
     accessToken,
     loading,
     error,
+    restoring,
     signIn,
     signOut,
     findVaultFile,

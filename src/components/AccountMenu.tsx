@@ -13,6 +13,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useCloudSync, SyncStatus } from '../hooks/useCloudSync';
+import { useStore } from '../store';
 
 // ---------------------------------------------------------------------------
 // Inline keyframe styles (injected once)
@@ -330,6 +331,12 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteCo
 }
 
 // ---------------------------------------------------------------------------
+// Auto-backup debounce delay (ms)
+// ---------------------------------------------------------------------------
+
+const AUTO_BACKUP_DELAY = 5000;
+
+// ---------------------------------------------------------------------------
 // AccountMenu
 // ---------------------------------------------------------------------------
 
@@ -340,9 +347,11 @@ export default function AccountMenu() {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   const {
-    user, loading, error, signIn, signOut,
+    user, loading, error, restoring, signIn, signOut,
     syncStatus, pushToCloud, pullFromCloud, deleteCloudData,
   } = useCloudSync();
+
+  const { replaceState, stateVersion } = useStore();
 
   // Inject animation keyframes once
   useEffect(() => { injectStyles(); }, []);
@@ -350,6 +359,40 @@ export default function AccountMenu() {
   // Combine both error sources so the UI always shows the real message
   const displayError = error || signInError;
   const isSyncing = syncStatus === 'syncing';
+
+  // -----------------------------------------------------------------------
+  // Debounced auto-backup: fires 5s after the last user-initiated state
+  // mutation, but only when signed in.
+  // -----------------------------------------------------------------------
+  const autoBackupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    // Skip the initial mount render (stateVersion starts at 0)
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Only auto-backup when signed in and not currently syncing
+    if (!user || isSyncing) return;
+
+    if (autoBackupTimer.current) {
+      clearTimeout(autoBackupTimer.current);
+    }
+
+    autoBackupTimer.current = setTimeout(() => {
+      pushToCloud().catch(() => {
+        // Silently swallow – the syncStatus badge will show the error
+      });
+    }, AUTO_BACKUP_DELAY);
+
+    return () => {
+      if (autoBackupTimer.current) {
+        clearTimeout(autoBackupTimer.current);
+      }
+    };
+  }, [stateVersion, user, isSyncing, pushToCloud]);
 
   // Lock body scroll when overlay is open
   useEffect(() => {
@@ -410,8 +453,12 @@ export default function AccountMenu() {
 
   const handleRestore = useCallback(async () => {
     if (isSyncing) return;
-    await pullFromCloud();
-  }, [isSyncing, pullFromCloud]);
+    const mergedData = await pullFromCloud();
+    // Instantly update React state so the UI reflects the merged data
+    if (mergedData) {
+      replaceState(mergedData);
+    }
+  }, [isSyncing, pullFromCloud, replaceState]);
 
   const handleDeleteConfirm = useCallback(async () => {
     await deleteCloudData();
@@ -466,7 +513,15 @@ export default function AccountMenu() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-6" style={{ WebkitOverflowScrolling: 'touch' }}>
 
-          {user ? (
+          {/* Show a subtle loading state while silently restoring session */}
+          {restoring && !user && (
+            <div className="flex flex-col items-center text-center pt-8 pb-4">
+              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-4" />
+              <p className="text-gray-400 text-sm">Restoring session...</p>
+            </div>
+          )}
+
+          {!restoring && user ? (
             <div className="flex flex-col items-center text-center pt-4 pb-2">
               {/* Avatar with animated gradient ring */}
               <div
@@ -507,7 +562,7 @@ export default function AccountMenu() {
                 <span className="text-sm font-medium">Sign Out</span>
               </button>
             </div>
-          ) : (
+          ) : !restoring ? (
             <div className="flex flex-col items-center text-center pt-8 pb-4">
               <div
                 className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center mb-5"
@@ -548,7 +603,7 @@ export default function AccountMenu() {
                 <span>Sign in with Google</span>
               </button>
             </div>
-          )}
+          ) : null}
 
           {user && (
             <>
@@ -577,7 +632,7 @@ export default function AccountMenu() {
                 <ActionCard
                   icon={CloudDownload}
                   title="Restore from Cloud"
-                  subtitle="Download your vault from Google Drive"
+                  subtitle="Smart merge with your local data"
                   onClick={handleRestore}
                   disabled={isSyncing}
                   isSyncing={isSyncing && syncStatus === 'syncing'}

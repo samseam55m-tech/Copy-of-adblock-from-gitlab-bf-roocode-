@@ -331,10 +331,10 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteCo
 }
 
 // ---------------------------------------------------------------------------
-// Auto-backup debounce delay (ms)
+// Auto-backup debounce delay: 15 minutes after the last card edit
 // ---------------------------------------------------------------------------
 
-const AUTO_BACKUP_DELAY = 5000;
+const AUTO_BACKUP_DELAY = 900_000;
 
 // ---------------------------------------------------------------------------
 // AccountMenu
@@ -347,11 +347,11 @@ export default function AccountMenu() {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   const {
-    user, loading, error, restoring, signIn, signOut,
+    user, loading, error, restoring, signIn, signOutAndWipe,
     syncStatus, pushToCloud, pullFromCloud, deleteCloudData,
   } = useCloudSync();
 
-  const { replaceState, stateVersion } = useStore();
+  const { replaceState, clearState, cards } = useStore();
 
   // Inject animation keyframes once
   useEffect(() => { injectStyles(); }, []);
@@ -361,18 +361,15 @@ export default function AccountMenu() {
   const isSyncing = syncStatus === 'syncing';
 
   // -----------------------------------------------------------------------
-  // Debounced auto-backup: fires 5s after the last user-initiated state
-  // mutation, but only when signed in.
+  // Debounced auto-backup: fires 15 minutes after the last card edit,
+  // but only when signed in. Watches `cards` directly.
   // -----------------------------------------------------------------------
   const autoBackupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isFirstRender = useRef(true);
+  const initialCardsRef = useRef(cards);
 
   useEffect(() => {
-    // Skip the initial mount render (stateVersion starts at 0)
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    // Skip the very first render (initial load from storage)
+    if (initialCardsRef.current === cards) return;
 
     // Only auto-backup when signed in and not currently syncing
     if (!user || isSyncing) return;
@@ -392,7 +389,7 @@ export default function AccountMenu() {
         clearTimeout(autoBackupTimer.current);
       }
     };
-  }, [stateVersion, user, isSyncing, pushToCloud]);
+  }, [cards, user, isSyncing, pushToCloud]);
 
   // Lock body scroll when overlay is open
   useEffect(() => {
@@ -443,8 +440,16 @@ export default function AccountMenu() {
   }, [signIn]);
 
   const handleSignOut = useCallback(async () => {
-    await signOut();
-  }, [signOut]);
+    // Cancel any pending auto-backup before wiping
+    if (autoBackupTimer.current) {
+      clearTimeout(autoBackupTimer.current);
+      autoBackupTimer.current = null;
+    }
+    await signOutAndWipe();
+    // Reset React context to empty state so Account A's data
+    // cannot accidentally be pushed to Account B's cloud
+    clearState();
+  }, [signOutAndWipe, clearState]);
 
   const handleBackup = useCallback(async () => {
     if (isSyncing) return;
@@ -632,7 +637,7 @@ export default function AccountMenu() {
                 <ActionCard
                   icon={CloudDownload}
                   title="Restore from Cloud"
-                  subtitle="Smart merge with your local data"
+                  subtitle="Replace local data with cloud backup"
                   onClick={handleRestore}
                   disabled={isSyncing}
                   isSyncing={isSyncing && syncStatus === 'syncing'}

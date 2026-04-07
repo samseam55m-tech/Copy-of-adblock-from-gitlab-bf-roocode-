@@ -7,44 +7,16 @@ import { useGoogleDrive } from './useGoogleDrive';
  * (keyed as `'appState'`) with the Google Drive `appDataFolder` via
  * `useGoogleDrive`.
  *
+ * Architecture:
+ * - Restore = strict overwrite (cloud replaces local entirely)
+ * - Sign-out = wipe local data to prevent cross-account bleeding
+ * - Backup = find-then-PATCH (no duplicate files)
+ *
  * Usage:
  *   const { syncStatus, pushToCloud, pullFromCloud, deleteCloudData, ... } = useCloudSync();
  */
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
-
-// ---------------------------------------------------------------------------
-// Merge helpers – deduplicate arrays of objects by `id`, preferring the
-// entry with the most recent `updatedAt` (or `createdAt`) timestamp.
-// ---------------------------------------------------------------------------
-
-function mergeById<T extends { id: string; updatedAt?: number; createdAt?: number }>(
-  local: T[],
-  cloud: T[],
-): T[] {
-  const map = new Map<string, T>();
-
-  // Seed with local entries
-  for (const item of local) {
-    map.set(item.id, item);
-  }
-
-  // Overlay cloud entries, keeping the newer version when both exist
-  for (const item of cloud) {
-    const existing = map.get(item.id);
-    if (!existing) {
-      map.set(item.id, item);
-    } else {
-      const existingTs = (existing.updatedAt ?? existing.createdAt) || 0;
-      const incomingTs = (item.updatedAt ?? item.createdAt) || 0;
-      if (incomingTs >= existingTs) {
-        map.set(item.id, item);
-      }
-    }
-  }
-
-  return Array.from(map.values());
-}
 
 export function useCloudSync() {
   const drive = useGoogleDrive();
@@ -52,6 +24,9 @@ export function useCloudSync() {
 
   // -----------------------------------------------------------------------
   // Push local state -> Google Drive
+  // The underlying uploadVaultData already does findVaultFile() first:
+  //   - If file exists -> PATCH (overwrite in place, no duplication)
+  //   - If file is null -> POST (create new)
   // -----------------------------------------------------------------------
   const pushToCloud = useCallback(async () => {
     setSyncStatus('syncing');
@@ -69,9 +44,10 @@ export function useCloudSync() {
   }, [drive]);
 
   // -----------------------------------------------------------------------
-  // Pull Google Drive -> merge with local -> persist & return merged data
-  // The caller MUST use the returned object to update React state so the
-  // UI refreshes instantly.
+  // Pull Google Drive -> STRICT OVERWRITE local
+  // No merging. The cloud JSON completely replaces localforage and the
+  // caller MUST use the returned object to call replaceState() so the
+  // React context updates instantly.
   // -----------------------------------------------------------------------
   const pullFromCloud = useCallback(async () => {
     setSyncStatus('syncing');
@@ -81,41 +57,12 @@ export function useCloudSync() {
         setSyncStatus('success');
         return null;
       }
-      const cloudState = JSON.parse(json) as Record<string, unknown>;
+      const cloudState = JSON.parse(json);
 
-      // Fetch current local state for merging
-      const localState = (await localforage.getItem('appState') || {}) as Record<string, unknown>;
-
-      // Merge each collection by ID, keeping the newer version of each item
-      const merged = {
-        cards: mergeById(
-          (localState.cards || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-          (cloudState.cards || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-        ),
-        projects: mergeById(
-          (localState.projects || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-          (cloudState.projects || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-        ),
-        promptProjects: mergeById(
-          (localState.promptProjects || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-          (cloudState.promptProjects || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-        ),
-        tags: mergeById(
-          (localState.tags || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-          (cloudState.tags || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-        ),
-        deletedHeaderBlocks: mergeById(
-          (localState.deletedHeaderBlocks || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-          (cloudState.deletedHeaderBlocks || []) as Array<{ id: string; updatedAt?: number; createdAt?: number }>,
-        ),
-        // For scalar values, prefer cloud
-        theme: (cloudState.theme as string) || (localState.theme as string) || 'dark',
-      };
-
-      // Persist merged state into localforage
-      await localforage.setItem('appState', merged);
+      // Strict overwrite: cloud data completely replaces local
+      await localforage.setItem('appState', cloudState);
       setSyncStatus('success');
-      return merged;
+      return cloudState;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       console.error('[CloudSync] pullFromCloud failed:', msg);
@@ -139,6 +86,17 @@ export function useCloudSync() {
     }
   }, [drive]);
 
+  // -----------------------------------------------------------------------
+  // Sign out: clear Google auth + wipe local data
+  // The caller MUST also call clearState() on the store to reset React
+  // context, preventing Account A's data from bleeding into Account B.
+  // -----------------------------------------------------------------------
+  const signOutAndWipe = useCallback(async () => {
+    await drive.signOut();
+    // Wipe localforage so no data remains for the next account
+    await localforage.removeItem('appState');
+  }, [drive]);
+
   return {
     /** Re-exported from useGoogleDrive for convenience */
     user: drive.user,
@@ -146,7 +104,9 @@ export function useCloudSync() {
     error: drive.error,
     restoring: drive.restoring,
     signIn: drive.signIn,
-    signOut: drive.signOut,
+
+    /** Sign out + wipe local data (replaces plain signOut) */
+    signOutAndWipe,
 
     /** Sync-specific */
     syncStatus,

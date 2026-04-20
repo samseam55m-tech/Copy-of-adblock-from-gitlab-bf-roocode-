@@ -1,14 +1,23 @@
 import { useCallback, useState } from 'react';
 import localforage from 'localforage';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { useStore } from '../store';
 
 /**
  * Local (file-based) backup hook. Exports the current vault state as a
- * downloadable JSON file and imports a previously exported file back into
- * the app, overwriting local data.
+ * JSON file using native Capacitor plugins, and imports a previously
+ * exported file back into the app, overwriting local data.
  *
- * This is used as a safe, offline transfer channel between isolated cloud
- * accounts (no cross-contamination through Google Drive).
+ * Export pipeline:
+ *   1. Stringify the React Context snapshot.
+ *   2. Filesystem.writeFile -> writes natively to Directory.Cache.
+ *      (Cache dir bypasses Android 11+ scoped-storage permission issues.)
+ *   3. Share.share() -> opens the native Android share sheet so the user
+ *      can pick "Save to device", "Save to Files", Drive, etc.
+ *
+ * Import pipeline (unchanged): file picker -> FileReader -> JSON.parse ->
+ * strict overwrite of localforage + React context.
  */
 
 export type LocalBackupStatus = 'idle' | 'exporting' | 'importing' | 'success' | 'error';
@@ -21,10 +30,9 @@ export function useLocalBackup() {
   const [lastError, setLastError] = useState<string | null>(null);
 
   // -----------------------------------------------------------------------
-  // Export: build a JSON blob from the current React context state,
-  // create a hidden <a> with a download attribute, click it, then cleanup.
+  // Export: native write via Capacitor Filesystem + Share sheet
   // -----------------------------------------------------------------------
-  const exportVaultToLocal = useCallback(() => {
+  const exportVaultToLocal = useCallback(async () => {
     setStatus('exporting');
     setLastError(null);
     try {
@@ -40,21 +48,23 @@ export function useLocalBackup() {
       };
 
       const json = JSON.stringify(snapshot, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
 
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = EXPORT_FILENAME;
-      anchor.style.display = 'none';
-      document.body.appendChild(anchor);
-      anchor.click();
+      // Write to the app's cache directory. This avoids Android 11+
+      // scoped-storage permission prompts entirely.
+      const writeResult = await Filesystem.writeFile({
+        path: EXPORT_FILENAME,
+        data: json,
+        directory: Directory.Cache,
+        encoding: Encoding.UTF8,
+      });
 
-      // Cleanup on the next tick so the download has time to start
-      setTimeout(() => {
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(url);
-      }, 100);
+      // Hand the native file URI to the OS share sheet so the user can
+      // pick where to save it (Files app, Drive, email, etc.).
+      await Share.share({
+        title: 'Export Roleplay Vault',
+        url: writeResult.uri,
+        dialogTitle: 'Save Vault Backup',
+      });
 
       setStatus('success');
     } catch (err: unknown) {

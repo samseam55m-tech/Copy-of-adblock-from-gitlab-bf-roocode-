@@ -11,8 +11,11 @@ import {
   AlertCircle,
   Trash2,
   ShieldAlert,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { useCloudSync, SyncStatus } from '../hooks/useCloudSync';
+import { useLocalBackup, LocalBackupStatus } from '../hooks/useLocalBackup';
 import { useStore } from '../store';
 
 // ---------------------------------------------------------------------------
@@ -109,6 +112,34 @@ function SyncStatusBadge({ status }: { status: SyncStatus }) {
 }
 
 // ---------------------------------------------------------------------------
+// LocalBackupBadge
+// ---------------------------------------------------------------------------
+
+function LocalBackupBadge({ status, error }: { status: LocalBackupStatus; error: string | null }) {
+  if (status === 'idle') return null;
+
+  const config: Record<Exclude<LocalBackupStatus, 'idle'>, { icon: React.ElementType; text: string; className: string; bg: string }> = {
+    exporting: { icon: Loader2, text: 'Exporting...', className: 'text-indigo-400 animate-spin', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+    importing: { icon: Loader2, text: 'Importing...', className: 'text-indigo-400 animate-spin', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+    success:   { icon: CheckCircle2, text: 'Done!', className: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+    error:     { icon: AlertCircle, text: error || 'Failed', className: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
+  };
+
+  const c = config[status];
+  const Icon = c.icon;
+
+  return (
+    <div
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${c.bg} transition-all duration-300`}
+      style={{ animation: 'cardStagger 0.3s ease-out both' }}
+    >
+      <Icon className={`w-4 h-4 ${c.className}`} />
+      <span className="text-sm text-gray-300 break-words">{c.text}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ActionCard
 // ---------------------------------------------------------------------------
 
@@ -116,29 +147,40 @@ interface ActionCardProps {
   icon: React.ElementType;
   title: string;
   subtitle: string;
-  onClick: () => void;
+  onClick?: () => void;
   disabled?: boolean;
   isSyncing?: boolean;
   variant?: 'default' | 'danger';
   delay?: number;
+  /** Render the card as a <label> wrapper (for hidden <input type="file"> triggers) */
+  asLabel?: boolean;
+  htmlFor?: string;
 }
 
-function ActionCard({ icon: Icon, title, subtitle, onClick, disabled, isSyncing, variant = 'default', delay = 0 }: ActionCardProps) {
+function ActionCard({
+  icon: Icon,
+  title,
+  subtitle,
+  onClick,
+  disabled,
+  isSyncing,
+  variant = 'default',
+  delay = 0,
+  asLabel = false,
+  htmlFor,
+}: ActionCardProps) {
   const isDanger = variant === 'danger';
 
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl border backdrop-blur-sm transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed group ${
-        isDanger
-          ? 'bg-red-950/30 border-red-500/20 hover:bg-red-950/50 hover:border-red-500/40 hover:shadow-lg hover:shadow-red-500/5'
-          : 'bg-gray-800/40 border-gray-700/50 hover:bg-gray-800/70 hover:border-gray-600/50 hover:shadow-lg hover:shadow-indigo-500/5'
-      }`}
-      style={{
-        animation: `cardStagger 0.4s ease-out ${delay}ms both`,
-      }}
-    >
+  const className = `w-full flex items-center gap-4 px-4 py-4 rounded-2xl border backdrop-blur-sm transition-all duration-300 group ${
+    disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+  } ${
+    isDanger
+      ? 'bg-red-950/30 border-red-500/20 hover:bg-red-950/50 hover:border-red-500/40 hover:shadow-lg hover:shadow-red-500/5'
+      : 'bg-gray-800/40 border-gray-700/50 hover:bg-gray-800/70 hover:border-gray-600/50 hover:shadow-lg hover:shadow-indigo-500/5'
+  }`;
+
+  const inner = (
+    <>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
         isDanger
           ? 'bg-red-500/15 group-hover:bg-red-500/25 group-hover:scale-110'
@@ -167,6 +209,22 @@ function ActionCard({ icon: Icon, title, subtitle, onClick, disabled, isSyncing,
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>
+    </>
+  );
+
+  const style = { animation: `cardStagger 0.4s ease-out ${delay}ms both` };
+
+  if (asLabel) {
+    return (
+      <label htmlFor={htmlFor} className={className} style={style}>
+        {inner}
+      </label>
+    );
+  }
+
+  return (
+    <button onClick={onClick} disabled={disabled} className={className} style={style}>
+      {inner}
     </button>
   );
 }
@@ -353,12 +411,21 @@ export default function AccountMenu() {
 
   const { replaceState, clearState, cards } = useStore();
 
+  const {
+    status: localStatus,
+    lastError: localError,
+    exportVaultToLocal,
+    importVaultFromLocal,
+    resetStatus: resetLocalStatus,
+  } = useLocalBackup();
+
   // Inject animation keyframes once
   useEffect(() => { injectStyles(); }, []);
 
   // Combine both error sources so the UI always shows the real message
   const displayError = error || signInError;
   const isSyncing = syncStatus === 'syncing';
+  const isLocalBusy = localStatus === 'exporting' || localStatus === 'importing';
 
   // -----------------------------------------------------------------------
   // Debounced auto-backup: fires 15 minutes after the last card edit,
@@ -417,6 +484,13 @@ export default function AccountMenu() {
     return () => clearTimeout(timer);
   }, [deleteSuccess]);
 
+  // Auto-clear local backup status (success/error) after 3 seconds
+  useEffect(() => {
+    if (localStatus !== 'success' && localStatus !== 'error') return;
+    const timer = setTimeout(() => resetLocalStatus(), 3000);
+    return () => clearTimeout(timer);
+  }, [localStatus, resetLocalStatus]);
+
   const handleSignIn = useCallback(async () => {
     setSignInError(null);
     try {
@@ -470,6 +544,11 @@ export default function AccountMenu() {
     setIsDeleteModalOpen(false);
     setDeleteSuccess(true);
   }, [deleteCloudData]);
+
+  const handleExport = useCallback(() => {
+    if (isLocalBusy) return;
+    exportVaultToLocal();
+  }, [isLocalBusy, exportVaultToLocal]);
 
   const overlay = (
     <div
@@ -612,7 +691,7 @@ export default function AccountMenu() {
 
           {user && (
             <>
-              {/* Section divider */}
+              {/* Section divider - Cloud Sync */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-800/60" />
@@ -622,7 +701,7 @@ export default function AccountMenu() {
                 </div>
               </div>
 
-              {/* Action Cards */}
+              {/* Cloud Action Cards */}
               <div className="space-y-3">
                 <ActionCard
                   icon={CloudUpload}
@@ -672,6 +751,56 @@ export default function AccountMenu() {
               </div>
             </>
           )}
+
+          {/* Local Data section – always visible, works without sign-in */}
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-800/60" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-gray-900/95 px-3 text-xs font-semibold text-gray-500 uppercase tracking-widest">Local Data</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <ActionCard
+                icon={Download}
+                title="Export Vault to File"
+                subtitle="Save a JSON backup to your device"
+                onClick={handleExport}
+                disabled={isLocalBusy}
+                isSyncing={localStatus === 'exporting'}
+                delay={0}
+              />
+
+              {/* Hidden file input that the label-based ActionCard triggers */}
+              <input
+                id="vault-import-input"
+                type="file"
+                accept="application/json"
+                onChange={importVaultFromLocal}
+                className="sr-only"
+                disabled={isLocalBusy}
+              />
+
+              <ActionCard
+                icon={Upload}
+                title="Import Vault from File"
+                subtitle="Overwrite local data with a JSON backup"
+                asLabel
+                htmlFor="vault-import-input"
+                disabled={isLocalBusy}
+                isSyncing={localStatus === 'importing'}
+                delay={80}
+              />
+
+              {/* Status badge */}
+              <div className="px-1 pt-1">
+                <LocalBackupBadge status={localStatus} error={localError} />
+              </div>
+            </div>
+          </>
         </div>
 
         {/* Footer */}

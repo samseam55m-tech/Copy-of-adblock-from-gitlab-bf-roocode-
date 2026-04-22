@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { generateId } from '../utils';
 import { useSwipeable } from 'react-swipeable';
 import AccountMenu from './AccountMenu';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 
 const THEMES = [
   { id: 'light', name: 'Light', icon: Sun, colors: ['#FFFFFF', '#3B82F6', '#E5E5E5'] },
@@ -30,6 +31,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { projects, cards, promptProjects, addProject, theme, setTheme } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const { scrollDirection, scrollRef } = useScrollDirection(10);
+  const barsHidden = scrollDirection === 'down';
 
   const handlers = useSwipeable({
     onSwipedRight: (e) => {
@@ -135,7 +138,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div {...handlers} className={`h-[100dvh] bg-bg-main text-text-main font-sans flex flex-col transition-colors duration-300 ${theme === 'starry-night' ? 'starry-bg' : ''}`} style={{ paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}>
       {/* Top Bar */}
-      <header className="h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
+      <header className={`h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${barsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0">
           <Menu className="w-6 h-6" />
         </button>
@@ -304,13 +307,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 relative flex flex-col overflow-hidden" style={{ paddingBottom: showBottomNav ? '56px' : '0px' }}>
+      <main ref={scrollRef} className="flex-1 relative flex flex-col overflow-y-auto" style={{ paddingBottom: showBottomNav ? '56px' : '0px' }}>
         {children}
       </main>
 
       {/* Bottom Navigation Bar */}
       {showBottomNav && (
-        <div className="bottom-nav">
+        <div className={`bottom-nav transition-transform duration-300 ${barsHidden ? 'translate-y-full' : 'translate-y-0'}`}>
           <div className="bottom-nav-inner">
             <div className="bottom-nav-pill">
               {NAV_ITEMS.map(item => {

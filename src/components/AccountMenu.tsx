@@ -92,7 +92,7 @@ function SyncStatusBadge({ status }: { status: SyncStatus }) {
   if (status === 'idle') return null;
 
   const config = {
-    syncing: { icon: Loader2, text: 'Syncing...', className: 'text-indigo-400 animate-spin', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+    syncing: { icon: Loader2, text: 'Syncing...', className: 'text-accent animate-spin', bg: 'bg-accent/10 border-accent/20' },
     success: { icon: CheckCircle2, text: 'Done!', className: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
     error:   { icon: AlertCircle, text: 'Failed', className: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
   }[status];
@@ -106,7 +106,7 @@ function SyncStatusBadge({ status }: { status: SyncStatus }) {
       style={{ animation: 'cardStagger 0.3s ease-out both' }}
     >
       <Icon className={`w-4 h-4 ${config.className}`} />
-      <span className="text-sm text-gray-300">{config.text}</span>
+      <span className="text-sm text-text-muted">{config.text}</span>
     </div>
   );
 }
@@ -119,8 +119,8 @@ function LocalBackupBadge({ status, error }: { status: LocalBackupStatus; error:
   if (status === 'idle') return null;
 
   const config: Record<Exclude<LocalBackupStatus, 'idle'>, { icon: React.ElementType; text: string; className: string; bg: string }> = {
-    exporting: { icon: Loader2, text: 'Exporting...', className: 'text-indigo-400 animate-spin', bg: 'bg-indigo-500/10 border-indigo-500/20' },
-    importing: { icon: Loader2, text: 'Importing...', className: 'text-indigo-400 animate-spin', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+    exporting: { icon: Loader2, text: 'Exporting...', className: 'text-accent animate-spin', bg: 'bg-accent/10 border-accent/20' },
+    importing: { icon: Loader2, text: 'Importing...', className: 'text-accent animate-spin', bg: 'bg-accent/10 border-accent/20' },
     success:   { icon: CheckCircle2, text: 'Done!', className: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
     error:     { icon: AlertCircle, text: error || 'Failed', className: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
   };
@@ -134,7 +134,7 @@ function LocalBackupBadge({ status, error }: { status: LocalBackupStatus; error:
       style={{ animation: 'cardStagger 0.3s ease-out both' }}
     >
       <Icon className={`w-4 h-4 ${c.className}`} />
-      <span className="text-sm text-gray-300 break-words">{c.text}</span>
+      <span className="text-sm text-text-muted break-words">{c.text}</span>
     </div>
   );
 }
@@ -176,7 +176,7 @@ function ActionCard({
   } ${
     isDanger
       ? 'bg-red-950/30 border-red-500/20 hover:bg-red-950/50 hover:border-red-500/40 hover:shadow-lg hover:shadow-red-500/5'
-      : 'bg-gray-800/40 border-gray-700/50 hover:bg-gray-800/70 hover:border-gray-600/50 hover:shadow-lg hover:shadow-indigo-500/5'
+      : 'bg-bg-surface-hover/40 border-border-main hover:bg-bg-surface-hover/70 hover:border-border-main hover:shadow-lg hover:shadow-accent/5'
   }`;
 
   const inner = (
@@ -184,28 +184,28 @@ function ActionCard({
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
         isDanger
           ? 'bg-red-500/15 group-hover:bg-red-500/25 group-hover:scale-110'
-          : 'bg-indigo-500/15 group-hover:bg-indigo-500/25 group-hover:scale-110'
+          : 'bg-accent/15 group-hover:bg-accent/25 group-hover:scale-110'
       }`}>
         {isSyncing ? (
-          <Loader2 className={`w-5 h-5 animate-spin ${isDanger ? 'text-red-400' : 'text-indigo-400'}`} />
+          <Loader2 className={`w-5 h-5 animate-spin ${isDanger ? 'text-red-400' : 'text-accent'}`} />
         ) : (
           <Icon className={`w-5 h-5 transition-transform duration-300 ${
-            isDanger ? 'text-red-400' : 'text-indigo-400'
+            isDanger ? 'text-red-400' : 'text-accent'
           }`} />
         )}
       </div>
       <div className="text-left flex-1 min-w-0">
         <span className={`text-sm font-semibold block transition-colors duration-200 ${
-          isDanger ? 'text-red-100 group-hover:text-red-50' : 'text-white group-hover:text-white'
+          isDanger ? 'text-red-100 group-hover:text-red-50' : 'text-text-main group-hover:text-text-main'
         }`}>{title}</span>
         <span className={`text-xs block mt-0.5 transition-colors duration-200 ${
-          isDanger ? 'text-red-300/60' : 'text-gray-400 group-hover:text-gray-300'
+          isDanger ? 'text-red-300/60' : 'text-text-muted group-hover:text-text-muted'
         }`}>{subtitle}</span>
       </div>
       <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 ${
-        isDanger ? 'bg-red-500/20' : 'bg-white/10'
+        isDanger ? 'bg-red-500/20' : 'bg-bg-surface-hover'
       }`}>
-        <svg className={`w-3 h-3 ${isDanger ? 'text-red-400' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <svg className={`w-3 h-3 ${isDanger ? 'text-red-400' : 'text-text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>
@@ -293,7 +293,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteCo
 
       {/* Modal */}
       <div
-        className={`relative w-full max-w-md bg-gray-900 border border-gray-700/60 rounded-2xl shadow-2xl overflow-hidden ${
+        className={`relative w-full max-w-md bg-bg-surface border border-border-main rounded-2xl shadow-2xl overflow-hidden ${
           shaking ? '' : ''
         }`}
         style={{
@@ -324,14 +324,14 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteCo
 
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-gray-300 leading-relaxed">
+          <p className="text-sm text-text-muted leading-relaxed">
             This will <span className="font-semibold text-red-400">permanently delete</span> your
             vault backup from Google Drive. Your local data will remain untouched, but the cloud
             copy will be gone forever and cannot be recovered.
           </p>
 
           <div className="bg-red-950/20 border border-red-500/15 rounded-xl px-4 py-3">
-            <p className="text-xs text-gray-400 mb-2.5">
+            <p className="text-xs text-text-muted mb-2.5">
               To confirm, type <span className="font-mono text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">{CONFIRM_PHRASE}</span> below:
             </p>
             <input
@@ -342,7 +342,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteCo
               onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
               placeholder={CONFIRM_PHRASE}
               disabled={isDeleting}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-gray-800/80 border border-gray-600/50 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-200 disabled:opacity-50 font-mono"
+              className="w-full px-3.5 py-2.5 rounded-lg bg-bg-main border border-border-main text-sm text-text-main placeholder-text-muted focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all duration-200 disabled:opacity-50 font-mono"
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
@@ -352,11 +352,11 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteCo
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-900/50 border-t border-gray-800/80 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 bg-bg-surface/50 border-t border-border-main flex items-center justify-end gap-3">
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 disabled:opacity-50"
+            className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text-main hover:bg-bg-surface-hover transition-all duration-200 disabled:opacity-50"
           >
             Cancel
           </button>
@@ -569,7 +569,7 @@ export default function AccountMenu() {
 
       {/* Sliding Overlay Panel */}
       <div
-        className="account-menu-panel fixed inset-y-0 right-0 w-full max-w-sm bg-gray-900/95 backdrop-blur-xl z-[10000] flex flex-col shadow-2xl border-l border-gray-800/50"
+        className="account-menu-panel fixed inset-y-0 right-0 w-full max-w-sm bg-bg-surface/95 backdrop-blur-xl z-[10000] flex flex-col shadow-2xl border-l border-border-main"
         style={{
           paddingTop: 'var(--safe-top)',
           paddingBottom: 'var(--safe-bottom)',
@@ -583,14 +583,14 @@ export default function AccountMenu() {
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800/60 shrink-0 bg-gray-900/50 backdrop-blur-md">
-          <h2 className="text-lg font-semibold text-white tracking-tight">Account</h2>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-main shrink-0 bg-bg-surface/50 backdrop-blur-md">
+          <h2 className="text-lg font-semibold text-text-main tracking-tight">Account</h2>
           <button
             onClick={() => setOpen(false)}
-            className="p-2 -mr-2 hover:bg-white/10 rounded-xl transition-all duration-200 active:scale-90"
+            className="p-2 -mr-2 hover:bg-bg-surface-hover rounded-xl transition-all duration-200 active:scale-90"
             aria-label="Close account menu"
           >
-            <X className="w-5 h-5 text-gray-400 hover:text-white transition-colors" />
+            <X className="w-5 h-5 text-text-muted hover:text-text-main transition-colors" />
           </button>
         </div>
 
@@ -600,8 +600,8 @@ export default function AccountMenu() {
           {/* Show a subtle loading state while silently restoring session */}
           {restoring && !user && (
             <div className="flex flex-col items-center text-center pt-8 pb-4">
-              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-4" />
-              <p className="text-gray-400 text-sm">Restoring session...</p>
+              <Loader2 className="w-8 h-8 text-accent animate-spin mb-4" />
+              <p className="text-text-muted text-sm">Restoring session...</p>
             </div>
           )}
 
@@ -611,14 +611,14 @@ export default function AccountMenu() {
               <div
                 className="relative w-22 h-22 rounded-full p-[3px] mb-4"
                 style={{
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7, #6366f1)',
+                  background: 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, white), var(--accent))',
                   backgroundSize: '300% 300%',
                   animation: 'avatarRingPulse 3s ease-in-out infinite',
                   width: '88px',
                   height: '88px',
                 }}
               >
-                <div className="w-full h-full rounded-full overflow-hidden bg-gray-900">
+                <div className="w-full h-full rounded-full overflow-hidden bg-bg-main">
                   {user.photoUrl ? (
                     <img
                       src={user.photoUrl}
@@ -627,20 +627,20 @@ export default function AccountMenu() {
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                      <User className="w-10 h-10 text-gray-400" />
+                    <div className="w-full h-full bg-bg-surface-hover flex items-center justify-center">
+                      <User className="w-10 h-10 text-text-muted" />
                     </div>
                   )}
                 </div>
               </div>
 
-              <h3 className="text-xl font-bold text-white tracking-tight">{user.displayName}</h3>
-              <p className="text-sm text-gray-400 mt-1 font-mono">{user.email}</p>
+              <h3 className="text-xl font-bold text-text-main tracking-tight">{user.displayName}</h3>
+              <p className="text-sm text-text-muted mt-1 font-mono">{user.email}</p>
 
               <button
                 onClick={handleSignOut}
                 disabled={loading}
-                className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-700/50 bg-gray-800/30 text-gray-400 hover:bg-white/10 hover:text-white hover:border-gray-600/50 transition-all duration-300 disabled:opacity-50 active:scale-[0.97]"
+                className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border-main bg-bg-surface-hover/30 text-text-muted hover:bg-bg-surface-hover hover:text-text-main hover:border-border-main transition-all duration-300 disabled:opacity-50 active:scale-[0.97]"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm font-medium">Sign Out</span>
@@ -649,12 +649,12 @@ export default function AccountMenu() {
           ) : !restoring ? (
             <div className="flex flex-col items-center text-center pt-8 pb-4">
               <div
-                className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center mb-5"
+                className="w-20 h-20 rounded-full bg-gradient-to-br from-bg-surface-hover to-bg-surface border border-border-main flex items-center justify-center mb-5"
                 style={{ animation: 'cardStagger 0.4s ease-out both' }}
               >
-                <User className="w-10 h-10 text-gray-500" />
+                <User className="w-10 h-10 text-text-muted" />
               </div>
-              <p className="text-gray-400 text-sm mb-6 max-w-[240px] leading-relaxed">
+              <p className="text-text-muted text-sm mb-6 max-w-[240px] leading-relaxed">
                 Sign in with your Google account to back up and restore your vault data across devices.
               </p>
 
@@ -671,7 +671,7 @@ export default function AccountMenu() {
               <button
                 onClick={handleSignIn}
                 disabled={loading}
-                className="relative flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:from-indigo-500 hover:to-indigo-400 active:scale-[0.97] transition-all duration-300 disabled:opacity-50"
+                className="relative flex items-center gap-3 px-6 py-3 rounded-xl bg-accent text-white font-semibold shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:brightness-110 active:scale-[0.97] transition-all duration-300 disabled:opacity-50"
                 style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
               >
                 {loading ? (
@@ -694,10 +694,10 @@ export default function AccountMenu() {
               {/* Section divider - Cloud Sync */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-800/60" />
+                  <div className="w-full border-t border-border-main" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-gray-900/95 px-3 text-xs font-semibold text-gray-500 uppercase tracking-widest">Cloud Sync</span>
+                  <span className="bg-bg-surface/95 px-3 text-xs font-semibold text-text-muted uppercase tracking-widest">Cloud Sync</span>
                 </div>
               </div>
 
@@ -756,10 +756,10 @@ export default function AccountMenu() {
           <>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-800/60" />
+                <div className="w-full border-t border-border-main" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-gray-900/95 px-3 text-xs font-semibold text-gray-500 uppercase tracking-widest">Local Data</span>
+                <span className="bg-bg-surface/95 px-3 text-xs font-semibold text-text-muted uppercase tracking-widest">Local Data</span>
               </div>
             </div>
 
@@ -804,8 +804,8 @@ export default function AccountMenu() {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-800/60 shrink-0 bg-gray-900/50 backdrop-blur-md">
-          <p className="text-xs text-gray-600 text-center">
+        <div className="px-5 py-3 border-t border-border-main shrink-0 bg-bg-surface/50 backdrop-blur-md">
+          <p className="text-xs text-text-muted text-center">
             Your data is stored privately in your Google Drive.
           </p>
         </div>
@@ -818,7 +818,7 @@ export default function AccountMenu() {
       {/* Trigger: Profile Avatar stays in the header */}
       <button
         onClick={() => setOpen(true)}
-        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 border-gray-700/50 hover:border-indigo-500/70 transition-all duration-300 ml-auto hover:shadow-lg hover:shadow-indigo-500/10 active:scale-95"
+        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 border-border-main hover:border-accent/70 transition-all duration-300 ml-auto hover:shadow-lg hover:shadow-accent/10 active:scale-95"
         aria-label="Open account menu"
       >
         {user?.photoUrl ? (
@@ -829,8 +829,8 @@ export default function AccountMenu() {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-            <User className="w-5 h-5 text-gray-500" />
+          <div className="w-full h-full bg-bg-surface-hover flex items-center justify-center">
+            <User className="w-5 h-5 text-text-muted" />
           </div>
         )}
       </button>

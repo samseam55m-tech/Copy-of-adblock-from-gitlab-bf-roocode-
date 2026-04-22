@@ -31,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { projects, cards, promptProjects, addProject, theme, setTheme } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const { scrollDirection, scrollRef } = useScrollDirection(10);
+  const { scrollDirection } = useScrollDirection(3);
   const barsHidden = scrollDirection === 'down';
 
   const handlers = useSwipeable({
@@ -307,7 +307,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content */}
-      <main ref={scrollRef} className="flex-1 relative flex flex-col overflow-y-auto" style={{ paddingBottom: showBottomNav ? '56px' : '0px' }}>
+      <main className="flex-1 relative flex flex-col overflow-hidden" style={{ paddingBottom: showBottomNav ? '56px' : '0px' }}>
         {children}
       </main>
 

@@ -184,7 +184,7 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
             {...attributes} 
             {...listeners}
             className={cn(
-              "p-4 flex flex-col cursor-pointer hover:bg-bg-surface-hover/50 transition-colors shrink-0 touch-none",
+              "p-4 flex flex-col cursor-pointer hover:bg-bg-surface-hover/50 transition-colors shrink-0 touch-pan-y",
               isFullScreen ? "pt-[calc(1rem+var(--safe-top))]" : ""
             )}
             onClick={() => onToggle(block.id)}

@@ -685,7 +685,7 @@ export default function EntryPage() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
+      const files = Array.from(e.target.files) as File[];
       const compressedImages = await Promise.all(files.map(f => compressImage(f, 1200, 0.7)));
       setImages(prev => [...prev, ...compressedImages]);
     }

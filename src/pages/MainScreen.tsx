@@ -8,6 +8,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 
 export default function MainScreen() {
   const { cards, projects, addProject, updateProject, tags, deleteCard, updateCard, updateCards } = useStore();
@@ -26,6 +27,7 @@ export default function MainScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const [searchFilter, setSearchFilter] = useState<'all' | 'headerBlocks' | 'cards'>('all');
+  const { barsVisible } = useScrollDirection(5);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -165,8 +167,8 @@ export default function MainScreen() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      {/* Top Bar - Sticky */}
-      <div className="sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 shrink-0" style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+      {/* Top Bar - Sticky, hides on scroll down */}
+      <div className={`sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 shrink-0 transition-all duration-300 ease-out ${barsVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (

@@ -31,8 +31,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { projects, cards, promptProjects, addProject, theme, setTheme } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const { scrollDirection } = useScrollDirection(3);
-  const barsHidden = scrollDirection === 'down';
+  const { barsVisible } = useScrollDirection(5);
+  const barsHidden = !barsVisible;
 
   const handlers = useSwipeable({
     onSwipedRight: (e) => {

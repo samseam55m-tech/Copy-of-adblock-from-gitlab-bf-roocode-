@@ -1,27 +1,29 @@
-import { useState, useEffect, useRef } from 'react';
-
-export type ScrollDirection = 'up' | 'down' | 'none';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * Tracks scroll direction from ANY scrollable element on the page.
- * Uses a capture-phase listener on document to detect scroll events
- * from nested scroll containers (scroll events don't bubble, but
- * they can be intercepted in the capture phase).
+ * Tracks scroll direction from ANY scrollable element on the page and
+ * returns a `barsVisible` flag suitable for hiding/showing UI chrome.
  *
- * Returns 'down' on any downward motion, 'up' on upward motion,
- * and 'none' when at rest or at top.
+ * Behaviour:
+ *  - Bars start visible.
+ *  - Any downward scroll hides them.
+ *  - They stay hidden while the user is idle (no "reset to visible on stop").
+ *  - A small upward scroll (>= threshold) brings them back.
+ *  - If the scroll container is at the very top, bars are always visible.
  *
- * @param threshold - minimum delta (px) before direction changes (default: 3)
+ * Uses a capture-phase listener on `document` so it works with any
+ * nested scroll container (scroll events don't bubble but are visible
+ * during capture).
+ *
+ * @param threshold minimum delta in px before a direction change registers (default 5)
  */
-export function useScrollDirection(threshold = 3): {
-  scrollDirection: ScrollDirection;
-} {
-  const [scrollDirection, setScrollDirection] = useState<ScrollDirection>('none');
+export function useScrollDirection(threshold = 5): { barsVisible: boolean } {
+  const [barsVisible, setBarsVisible] = useState(true);
   const scrollTopMap = useRef(new WeakMap<EventTarget, number>());
   const ticking = useRef(false);
 
-  useEffect(() => {
-    const handleScroll = (e: Event) => {
+  const handleScroll = useCallback(
+    (e: Event) => {
       if (ticking.current) return;
       ticking.current = true;
 
@@ -36,27 +38,37 @@ export function useScrollDirection(threshold = 3): {
         const lastScrollTop = scrollTopMap.current.get(target) ?? currentScrollTop;
         const delta = currentScrollTop - lastScrollTop;
 
-        if (Math.abs(delta) >= threshold) {
-          setScrollDirection(delta > 0 ? 'down' : 'up');
+        // Always show bars when at the very top
+        if (currentScrollTop <= 0) {
+          setBarsVisible(true);
           scrollTopMap.current.set(target, currentScrollTop);
+          ticking.current = false;
+          return;
         }
 
-        // Reset to 'none' if at top
-        if (currentScrollTop <= 0) {
-          setScrollDirection('none');
+        if (Math.abs(delta) >= threshold) {
+          if (delta > 0) {
+            // Scrolling down -> hide
+            setBarsVisible(false);
+          } else {
+            // Scrolling up -> show
+            setBarsVisible(true);
+          }
+          scrollTopMap.current.set(target, currentScrollTop);
         }
 
         ticking.current = false;
       });
-    };
+    },
+    [threshold],
+  );
 
-    // Capture phase so we intercept scroll from any nested element
+  useEffect(() => {
     document.addEventListener('scroll', handleScroll, { capture: true, passive: true });
-
     return () => {
       document.removeEventListener('scroll', handleScroll, { capture: true } as EventListenerOptions);
     };
-  }, [threshold]);
+  }, [handleScroll]);
 
-  return { scrollDirection };
+  return { barsVisible };
 }

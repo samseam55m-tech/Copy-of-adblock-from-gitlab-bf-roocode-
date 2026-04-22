@@ -7,6 +7,7 @@ import { Plus, X, ArrowLeft, GripVertical, Trash2, Search, SlidersHorizontal, Fo
 import { motion, AnimatePresence } from 'motion/react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -28,6 +29,7 @@ export default function ProjectDetail() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchFilter, setSearchFilter] = useState<'all' | 'headerBlocks' | 'cards'>('all');
+  const { barsVisible } = useScrollDirection(5);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -196,7 +198,7 @@ export default function ProjectDetail() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      <div className="sticky top-0 z-30 bg-bg-main/80 backdrop-blur-md p-4 flex flex-col gap-3 shrink-0 border-b border-border-main/50">
+      <div className={`sticky top-0 z-30 bg-bg-main/80 backdrop-blur-md p-4 flex flex-col gap-3 shrink-0 border-b border-border-main/50 transition-all duration-300 ease-out ${barsVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/projects')} className="p-2 hover:bg-bg-surface-hover rounded-lg -ml-2 shrink-0">
             <ArrowLeft className="w-5 h-5" />

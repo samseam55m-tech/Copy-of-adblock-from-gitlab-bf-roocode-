@@ -29,11 +29,14 @@ export default function MainScreen() {
   const [searchFilter, setSearchFilter] = useState<'all' | 'headerBlocks' | 'cards'>('all');
   const { barsVisible } = useScrollDirection(5);
 
+  // Issue 3: lock bars visible when in selection mode
+  const effectiveVisible = barsVisible || selectionMode;
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 500,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -167,8 +170,9 @@ export default function MainScreen() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      {/* Top Bar - Sticky, hides on scroll down */}
-      <div className={`sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 shrink-0 transition-all duration-300 ease-out ${barsVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+      {/* Top Bar — wrapper collapses when hidden so cards reclaim space */}
+      <div className={`sticky top-0 z-30 overflow-hidden transition-[max-height] duration-300 ease-out shrink-0 ${effectiveVisible ? 'max-h-[200px]' : 'max-h-0'}`}>
+        <div className={`bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -264,6 +268,7 @@ export default function MainScreen() {
             </button>
           </motion.div>
         )}
+        </div>
       </div>
 
       {/* Masonry Grid */}

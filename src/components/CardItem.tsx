@@ -76,6 +76,10 @@ export default React.memo(function CardItem({ card, selected, isSortable = true,
     clearTimeout(timer);
   };
 
+  const handleTouchMove = () => {
+    clearTimeout(timer);
+  };
+
   const handleClick = () => {
     if (selected !== undefined && onSelect) {
       onSelect(card.id);
@@ -133,6 +137,7 @@ export default React.memo(function CardItem({ card, selected, isSortable = true,
       onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
       onMouseDown={handleTouchStart}
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}

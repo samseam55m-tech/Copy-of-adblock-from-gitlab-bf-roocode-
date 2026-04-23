@@ -57,6 +57,10 @@ export const ProjectItem = React.memo(function ProjectItem({
     clearTimeout(timer);
   };
 
+  const handleTouchMove = () => {
+    clearTimeout(timer);
+  };
+
   return (
     <div
       ref={inViewRef}
@@ -68,6 +72,7 @@ export const ProjectItem = React.memo(function ProjectItem({
       }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
       onMouseDown={handleTouchStart}
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}

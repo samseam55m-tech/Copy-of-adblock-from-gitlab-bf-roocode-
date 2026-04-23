@@ -137,42 +137,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div {...handlers} className={`h-[100dvh] bg-bg-main text-text-main font-sans flex flex-col transition-colors duration-300 ${theme === 'starry-night' ? 'starry-bg' : ''}`} style={{ paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}>
-      {/* Top Bar */}
-      <header className={`h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${barsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
-        <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0">
-          <Menu className="w-6 h-6" />
-        </button>
-        
-        {breadcrumbs.length > 1 && (
-          <button 
-            onClick={() => navigate(breadcrumbs[breadcrumbs.length - 2].path)}
-            className="p-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0 ml-1 md:hidden"
-          >
-            <ArrowLeft className="w-5 h-5" />
+      {/* Top Bar — wrapper collapses when hidden so content reclaims the space */}
+      <div className={`shrink-0 overflow-hidden transition-[max-height] duration-300 ease-out ${barsHidden ? 'max-h-0' : 'max-h-14'}`}>
+        <header className={`h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md z-40 transition-transform duration-300 ease-out ${barsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+          <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0">
+            <Menu className="w-6 h-6" />
           </button>
-        )}
+          
+          {breadcrumbs.length > 1 && (
+            <button 
+              onClick={() => navigate(breadcrumbs[breadcrumbs.length - 2].path)}
+              className="p-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0 ml-1 md:hidden"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
 
-        <div className="ml-2 md:ml-4 flex items-center overflow-hidden flex-1 min-w-0">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={crumb.path}>
-              {index > 0 && <ChevronRight className="w-4 h-4 text-text-muted mx-1.5 shrink-0" />}
-              <Link 
-                to={crumb.path}
-                className={`truncate transition-colors ${
-                  index === breadcrumbs.length - 1 
-                    ? 'font-semibold text-lg tracking-tight text-text-main' 
-                    : 'text-sm font-medium text-text-muted hover:text-text-secondary hidden md:block'
-                }`}
-              >
-                {crumb.label}
-              </Link>
-            </React.Fragment>
-          ))}
-        </div>
+          <div className="ml-2 md:ml-4 flex items-center overflow-hidden flex-1 min-w-0">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.path}>
+                {index > 0 && <ChevronRight className="w-4 h-4 text-text-muted mx-1.5 shrink-0" />}
+                <Link 
+                  to={crumb.path}
+                  className={`truncate transition-colors ${
+                    index === breadcrumbs.length - 1 
+                      ? 'font-semibold text-lg tracking-tight text-text-main' 
+                      : 'text-sm font-medium text-text-muted hover:text-text-secondary hidden md:block'
+                  }`}
+                >
+                  {crumb.label}
+                </Link>
+              </React.Fragment>
+            ))}
+          </div>
 
-        {/* Account Menu Avatar */}
-        <AccountMenu />
-      </header>
+          {/* Account Menu Avatar */}
+          <AccountMenu />
+        </header>
+      </div>
 
       {/* Sidebar Overlay */}
       <div 
@@ -306,8 +308,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 relative flex flex-col overflow-hidden" style={{ paddingBottom: showBottomNav ? '56px' : '0px' }}>
+      {/* Main Content — paddingBottom collapses when bottom nav hides */}
+      <main
+        className="flex-1 relative flex flex-col overflow-hidden transition-[padding-bottom] duration-300 ease-out"
+        style={{ paddingBottom: showBottomNav && barsVisible ? '56px' : '0px' }}
+      >
         {children}
       </main>
 

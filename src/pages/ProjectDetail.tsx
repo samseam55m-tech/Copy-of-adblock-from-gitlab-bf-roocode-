@@ -30,12 +30,13 @@ export default function ProjectDetail() {
   const [endDate, setEndDate] = useState('');
   const [searchFilter, setSearchFilter] = useState<'all' | 'headerBlocks' | 'cards'>('all');
   const { barsVisible } = useScrollDirection(5);
+  const effectiveVisible = barsVisible || selectionMode;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 500,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -198,7 +199,8 @@ export default function ProjectDetail() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      <div className={`sticky top-0 z-30 bg-bg-main/80 backdrop-blur-md p-4 flex flex-col gap-3 shrink-0 border-b border-border-main/50 transition-all duration-300 ease-out ${barsVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}>
+      <div className={`sticky top-0 z-30 overflow-hidden transition-[max-height] duration-300 ease-out shrink-0 ${effectiveVisible ? 'max-h-[200px]' : 'max-h-0'}`}>
+        <div className={`bg-bg-main/80 backdrop-blur-md p-4 flex flex-col gap-3 border-b border-border-main/50 transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/projects')} className="p-2 hover:bg-bg-surface-hover rounded-lg -ml-2 shrink-0">
             <ArrowLeft className="w-5 h-5" />
@@ -300,6 +302,7 @@ export default function ProjectDetail() {
             </button>
           </motion.div>
         )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">

@@ -31,6 +31,7 @@ export default function PromptGallery() {
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { barsVisible } = useScrollDirection(5);
+  const effectiveVisible = barsVisible || selectionMode;
 
   const handleDeleteSelected = async () => {
     const projectsToUpdate = Array.from(selectedProjects)
@@ -184,7 +185,8 @@ export default function PromptGallery() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      <div className={`sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 pb-4 flex flex-col gap-3 shrink-0 transition-all duration-300 ease-out ${barsVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+      <div className={`sticky top-0 z-30 overflow-hidden transition-[max-height] duration-300 ease-out shrink-0 ${effectiveVisible ? 'max-h-[200px]' : 'max-h-0'}`}>
+        <div className={`bg-bg-main backdrop-blur-md p-4 pb-4 flex flex-col gap-3 transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -265,6 +267,7 @@ export default function PromptGallery() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
         </div>
       </div>
 

@@ -186,7 +186,7 @@ export default function PromptGallery() {
   return (
     <div className="flex-1 h-full overflow-hidden relative">
       {/* Top Bar — absolute, GPU-only transform */}
-      <div className={`absolute top-0 left-0 right-0 z-30 bg-bg-main backdrop-blur-md p-4 pb-4 flex flex-col gap-3 will-change-transform transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+      <div className={`absolute top-14 left-0 right-0 z-30 bg-bg-main p-4 pb-4 flex flex-col gap-3 will-change-transform transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -270,7 +270,7 @@ export default function PromptGallery() {
         </div>
       </div>
 
-      <div className="h-full overflow-y-auto p-4 pt-24 pb-40" style={{ overscrollBehavior: 'none' }}>
+      <div className="h-full overflow-y-auto p-4 pt-[160px] pb-40" style={{ overscrollBehavior: 'none' }}>
       {filteredProjects.length > 0 && (
         <div className="space-y-8">
           {pinnedProjects.length > 0 && (

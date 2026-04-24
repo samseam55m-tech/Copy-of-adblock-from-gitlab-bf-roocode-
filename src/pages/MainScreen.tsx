@@ -171,7 +171,7 @@ export default function MainScreen() {
   return (
     <div className="flex-1 h-full overflow-hidden relative">
       {/* Top Bar — absolute, GPU-only transform, no layout reflow */}
-      <div className={`absolute top-0 left-0 right-0 z-30 bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 will-change-transform transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+      <div className={`absolute top-14 left-0 right-0 z-30 bg-bg-main p-4 flex flex-col gap-3 will-change-transform transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -270,7 +270,7 @@ export default function MainScreen() {
       </div>
 
       {/* Masonry Grid — pt-24 clears the absolute search bar, pb-40 clears bottom nav + FAB */}
-      <div className="h-full overflow-y-auto px-4 pt-24 pb-40" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'none' }}>
+      <div className="h-full overflow-y-auto px-4 pt-[140px] pb-40" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'none' }}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

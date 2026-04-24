@@ -126,7 +126,7 @@ export default function Statistics() {
   }, [navigate]);
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto p-4 pb-24">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto p-4 pt-[72px] pb-40" style={{ overscrollBehavior: 'none' }}>
       <div className="flex items-center justify-between mb-6 px-2">
         <div className="flex items-center gap-3">
           <BarChart3 className="w-8 h-8 text-text-muted" />

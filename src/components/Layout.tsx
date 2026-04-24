@@ -138,7 +138,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div {...handlers} className={`h-[100dvh] bg-bg-main text-text-main font-sans flex flex-col transition-colors duration-300 ${theme === 'starry-night' ? 'starry-bg' : ''}`} style={{ paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}>
       {/* Top Bar — fixed position, GPU-only transform animation, no layout reflow */}
-        <header className={`fixed top-0 left-0 right-0 h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md z-40 will-change-transform transition-transform duration-300 ease-out ${barsHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ top: 'var(--safe-top, 0px)' }}>
+        <header className={`fixed top-0 left-0 right-0 h-14 flex items-center px-4 border-b border-border-main bg-bg-main backdrop-blur-md z-40 will-change-transform transition-transform duration-300 ease-out ${barsHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ top: 'var(--safe-top, 0px)' }}>
           <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0">
             <Menu className="w-6 h-6" />
           </button>

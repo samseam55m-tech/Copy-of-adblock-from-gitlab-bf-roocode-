@@ -137,9 +137,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div {...handlers} className={`h-[100dvh] bg-bg-main text-text-main font-sans flex flex-col transition-colors duration-300 ${theme === 'starry-night' ? 'starry-bg' : ''}`} style={{ paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}>
-      {/* Top Bar — wrapper collapses when hidden so content reclaims the space */}
-      <div className={`shrink-0 overflow-hidden transition-[max-height] duration-300 ease-out ${barsHidden ? 'max-h-0' : 'max-h-14'}`}>
-        <header className={`h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md z-40 transition-transform duration-300 ease-out ${barsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+      {/* Top Bar — fixed position, GPU-only transform animation, no layout reflow */}
+        <header className={`fixed top-0 left-0 right-0 h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md z-40 will-change-transform transition-transform duration-300 ease-out ${barsHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ top: 'var(--safe-top, 0px)' }}>
           <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0">
             <Menu className="w-6 h-6" />
           </button>
@@ -174,7 +173,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Account Menu Avatar */}
           <AccountMenu />
         </header>
-      </div>
 
       {/* Sidebar Overlay */}
       <div 
@@ -308,17 +306,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Main Content — paddingBottom collapses when bottom nav hides */}
-      <main
-        className="flex-1 relative flex flex-col overflow-hidden transition-[padding-bottom] duration-300 ease-out"
-        style={{ paddingBottom: showBottomNav && barsVisible ? '56px' : '0px' }}
-      >
+      {/* Main Content — no dynamic padding; pages handle their own padding for fixed header/nav */}
+      <main className="flex-1 relative flex flex-col overflow-hidden">
         {children}
       </main>
 
       {/* Bottom Navigation Bar */}
       {showBottomNav && (
-        <div className={`bottom-nav transition-transform duration-300 ${barsHidden ? 'translate-y-full' : 'translate-y-0'}`}>
+        <div className={`bottom-nav will-change-transform transition-transform duration-300 ease-out ${barsHidden ? 'translate-y-full' : 'translate-y-0'}`}>
           <div className="bottom-nav-inner">
             <div className="bottom-nav-pill">
               {NAV_ITEMS.map(item => {

@@ -169,10 +169,9 @@ export default function MainScreen() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      {/* Top Bar — wrapper collapses when hidden so cards reclaim space */}
-      <div className={`sticky top-0 z-30 overflow-hidden transition-[max-height] duration-300 ease-out shrink-0 ${effectiveVisible ? 'max-h-[200px]' : 'max-h-0'}`}>
-        <div className={`bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+    <div className="flex-1 h-full overflow-hidden relative">
+      {/* Top Bar — absolute, GPU-only transform, no layout reflow */}
+      <div className={`absolute top-0 left-0 right-0 z-30 bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 will-change-transform transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -268,11 +267,10 @@ export default function MainScreen() {
             </button>
           </motion.div>
         )}
-        </div>
       </div>
 
-      {/* Masonry Grid */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* Masonry Grid — pt-24 clears the absolute search bar, pb-40 clears bottom nav + FAB */}
+      <div className="h-full overflow-y-auto px-4 pt-24 pb-40" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'none' }}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

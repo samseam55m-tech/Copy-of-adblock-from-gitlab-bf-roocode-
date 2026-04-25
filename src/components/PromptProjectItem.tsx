@@ -55,6 +55,10 @@ export const PromptProjectItem = React.memo(function PromptProjectItem({
     clearTimeout(timer);
   };
 
+  const handleTouchMove = () => {
+    clearTimeout(timer);
+  };
+
   return (
     <div
       ref={inViewRef}
@@ -66,6 +70,7 @@ export const PromptProjectItem = React.memo(function PromptProjectItem({
       }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
       onMouseDown={handleTouchStart}
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}

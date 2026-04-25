@@ -122,9 +122,15 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
 
   const handleAddVariation = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // High-water-mark: compute next number from stored counter or fallback to scanning existing names
+    const currentMax = block.nextVariationNumber || Math.max(1, ...variations.map(v => {
+      const match = v.name.match(/^V(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    }));
+    const nextNum = currentMax + 1;
     const newVariation = {
       id: generateId(),
-      name: `V${variations.length + 1}`,
+      name: `V${nextNum}`,
       content: ''
     };
     
@@ -135,7 +141,8 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
     
     onUpdate(block.id, {
       variations: newVariations,
-      activeVariationId: newVariation.id
+      activeVariationId: newVariation.id,
+      nextVariationNumber: nextNum
     });
   };
 
@@ -150,6 +157,7 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
     const newVariations = variations.filter(v => v.id !== activeVariationId).map(v => ({ ...v, content: variationContents[v.id] ?? v.content }));
     const newActiveId = newVariations[0].id;
     
+    // Preserve the high-water-mark counter (do NOT decrement on delete)
     onUpdate(block.id, {
       variations: newVariations,
       activeVariationId: newActiveId
@@ -176,7 +184,7 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
             {...attributes} 
             {...listeners}
             className={cn(
-              "p-4 flex flex-col cursor-pointer hover:bg-bg-surface-hover/50 transition-colors shrink-0 touch-none",
+              "p-4 flex flex-col cursor-pointer hover:bg-bg-surface-hover/50 transition-colors shrink-0 touch-pan-y",
               isFullScreen ? "pt-[calc(1rem+var(--safe-top))]" : ""
             )}
             onClick={() => onToggle(block.id)}
@@ -280,13 +288,25 @@ const SortableBlock = React.memo(function SortableBlock({ block, isExpanded, onT
               <Plus className="w-4 h-4" />
             </button>
             {variations.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowDeleteVariationConfirm(true); }}
-                className="p-1 rounded-lg bg-bg-surface-hover text-text-muted hover:bg-red-500/20 hover:text-red-400 transition-colors shrink-0"
-                title="Delete Current Variation"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              (() => {
+                const activeVariation = variations.find(v => v.id === activeVariationId);
+                const isV1Active = activeVariation?.name === 'V1';
+                return (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowDeleteVariationConfirm(true); }}
+                    disabled={isV1Active}
+                    className={cn(
+                      "p-1 rounded-lg bg-bg-surface-hover transition-colors shrink-0",
+                      isV1Active
+                        ? "text-text-muted/30 cursor-not-allowed"
+                        : "text-text-muted hover:bg-red-500/20 hover:text-red-400"
+                    )}
+                    title={isV1Active ? "V1 is the base variation and cannot be deleted" : "Delete Current Variation"}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                );
+              })()
             )}
           </div>
         )}

@@ -8,10 +8,15 @@ import ConfirmModal from '../components/ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { useScrollDirection } from '../hooks/useScrollDirection';
+import { useLayout, LAYOUT_HIDE_SLIDE_PX } from '../components/Layout';
+
+const HIDE_SLIDE_PX = LAYOUT_HIDE_SLIDE_PX;
 
 export default function MainScreen() {
   const { cards, projects, addProject, updateProject, tags, deleteCard, updateCard, updateCards } = useStore();
   const navigate = useNavigate();
+  const { setSelectionActive } = useLayout();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
@@ -19,18 +24,29 @@ export default function MainScreen() {
 
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [selectedSearchTags, setSelectedSearchTags] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<'dateDesc' | 'dateAsc' | 'nameAsc' | 'nameDesc'>('dateDesc');
+  const [sortBy, setSortBy] = useState<'dateDesc' | 'dateAsc' | 'nameAsc' | 'nameDesc' | 'editedDesc'>('dateDesc');
+  const [showDates, setShowDates] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const [searchFilter, setSearchFilter] = useState<'all' | 'headerBlocks' | 'cards'>('all');
+  const { barsVisible } = useScrollDirection(5);
+
+  // Lock bars visible when in selection mode
+  const effectiveVisible = barsVisible || selectionMode;
+
+  // Sync selection mode to Layout so the Layout header also stays visible
+  React.useEffect(() => {
+    setSelectionActive(selectionMode);
+    return () => setSelectionActive(false);
+  }, [selectionMode, setSelectionActive]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 500,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -86,8 +102,12 @@ export default function MainScreen() {
       }
 
       switch (sortBy) {
-        case 'dateDesc': return b.createdAt - a.createdAt;
-        case 'dateAsc': return a.createdAt - b.createdAt;
+        case 'editedDesc':
+          return (Number(b.updatedAt || b.createdAt) || 0) - (Number(a.updatedAt || a.createdAt) || 0);
+        case 'dateDesc':
+          return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+        case 'dateAsc':
+          return (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0);
         case 'nameAsc': return a.name.localeCompare(b.name);
         case 'nameDesc': return b.name.localeCompare(a.name);
         default: return 0;
@@ -159,9 +179,20 @@ export default function MainScreen() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      {/* Top Bar - Sticky */}
-      <div className="sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 flex flex-col gap-3 shrink-0" style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+    <div className="w-full h-full overflow-hidden relative">
+      {/* ── ABSOLUTE TOP HEADER (search / selection bar) ──
+           Starts at top-0, padding-top accounts for safe-area + Layout header (56px).
+           Translates by the SAME fixed px as Layout header → no ghost gap. */}
+      <div
+        className="absolute top-0 left-0 right-0 z-[90] bg-bg-main will-change-transform"
+        style={{
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `-${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 1px 0 0 var(--border-main)',
+        }}
+      >
+      <div className="p-4 flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -258,9 +289,18 @@ export default function MainScreen() {
           </motion.div>
         )}
       </div>
+      </div>
 
-      {/* Masonry Grid */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* ── FULL-HEIGHT SCROLL CONTAINER ── sits behind absolute headers */}
+      <div
+        className="w-full h-full overflow-y-auto px-4"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'none',
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px + 80px + 24px)',
+          paddingBottom: 'calc(var(--safe-bottom, 0px) + 80px + 24px)',
+        }}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -279,6 +319,7 @@ export default function MainScreen() {
                       key={card.id} 
                       card={card} 
                       tags={tags}
+                      showDates={showDates}
                       onTogglePin={handleTogglePinSingle}
                       selected={selectionMode ? selectedCards.has(card.id) : undefined}
                       onSelect={selectionMode ? toggleSelection : undefined}
@@ -309,6 +350,7 @@ export default function MainScreen() {
                       key={card.id} 
                       card={card} 
                       tags={tags}
+                      showDates={showDates}
                       onTogglePin={handleTogglePinSingle}
                       selected={selectionMode ? selectedCards.has(card.id) : undefined}
                       onSelect={selectionMode ? toggleSelection : undefined}
@@ -331,10 +373,16 @@ export default function MainScreen() {
         )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* ── ABSOLUTE FAB ── hides with bottom nav */}
       <button 
         onClick={() => navigate('/entry')}
-        className="fab-button bg-text-main text-bg-main"
+        className="absolute z-[90] w-14 h-14 rounded-2xl shadow-2xl flex items-center justify-center bg-text-main text-bg-main active:scale-[0.92] transition-transform will-change-transform"
+        style={{
+          right: 16,
+          bottom: 'calc(var(--safe-bottom, 0px) + 80px + 16px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         <Plus className="w-8 h-8" />
       </button>
@@ -392,9 +440,21 @@ export default function MainScreen() {
                 >
                   <option value="dateDesc">Newest First</option>
                   <option value="dateAsc">Oldest First</option>
+                  <option value="editedDesc">Newly Edited</option>
                   <option value="nameAsc">Name (A-Z)</option>
                   <option value="nameDesc">Name (Z-A)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <h4 className="text-sm font-medium text-text-muted">Show Dates on Cards</h4>
+                  <div className={`relative w-10 h-6 rounded-full transition-colors ${showDates ? 'bg-accent' : 'bg-bg-main border border-border-main'}`}
+                    onClick={() => setShowDates(prev => !prev)}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${showDates ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </div>
+                </label>
               </div>
 
               <div>
@@ -454,6 +514,7 @@ export default function MainScreen() {
                   setStartDate('');
                   setEndDate('');
                   setSortBy('dateDesc');
+                  setShowDates(false);
                 }}
                 className="px-4 py-2 rounded-xl font-medium text-text-muted hover:bg-bg-surface-hover transition-colors"
               >

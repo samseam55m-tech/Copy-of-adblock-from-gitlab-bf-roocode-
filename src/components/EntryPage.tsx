@@ -105,7 +105,7 @@ export function EntryPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-bg-main  text-text-main  pb-24 font-sans transition-colors duration-300">
+    <div className="flex-1 flex flex-col overflow-y-auto bg-bg-main text-text-main pb-24 font-sans transition-colors duration-300">
       {/* Header */}
       <header className={`sticky top-0 z-50 bg-bg-main/90 backdrop-blur-xl border-b border-border-main px-4 py-3 flex items-center justify-between transition-shadow ${isScrolled ? 'shadow-sm' : ''}`}>
         <div className="flex items-center gap-3">

@@ -23,6 +23,7 @@ export interface HeaderBlock {
   isSwapped?: boolean;
   isOriginal?: boolean;
   order?: number;
+  nextVariationNumber?: number;
 }
 
 export interface DeletedHeaderBlock extends HeaderBlock {
@@ -48,9 +49,11 @@ export interface Card {
   variations?: CardVariation[];
   activeVariationId?: string;
   createdAt: number;
+  updatedAt?: number;
   isPinned?: boolean;
   order?: number;
   deletedAt?: number;
+  nextGenerationNumber?: number;
 }
 
 export interface Project {

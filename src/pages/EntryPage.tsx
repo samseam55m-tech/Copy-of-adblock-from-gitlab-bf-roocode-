@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
 import { Card, HeaderBlock, Tag, CardVariation } from '../types';
-import { generateId, fileToBase64, cn, useUndoRedo } from '../utils';
+import { generateId, compressImage, cn, useUndoRedo } from '../utils';
 import { Plus, X, ChevronLeft, ChevronRight, ChevronDown, Copy, Check, Save, ImagePlus, Tag as TagIcon, Maximize, Minimize, Trash2, ZoomIn, Star, GripVertical, Undo2, Redo2 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -293,9 +293,15 @@ const SortableHeaderBlockItem = React.memo(function SortableHeaderBlockItem({ bl
 
   const handleAddVariation = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // High-water-mark: compute next number from stored counter or fallback to scanning existing names
+    const currentMax = block.nextVariationNumber || Math.max(1, ...variations.map(v => {
+      const match = v.name.match(/^V(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    }));
+    const nextNum = currentMax + 1;
     const newVariation = {
       id: generateId(),
-      name: `V${variations.length + 1}`,
+      name: `V${nextNum}`,
       content: ''
     };
     
@@ -306,7 +312,8 @@ const SortableHeaderBlockItem = React.memo(function SortableHeaderBlockItem({ bl
     
     onUpdate(block.id, {
       variations: newVariations,
-      activeVariationId: newVariation.id
+      activeVariationId: newVariation.id,
+      nextVariationNumber: nextNum
     });
   };
 
@@ -321,6 +328,7 @@ const SortableHeaderBlockItem = React.memo(function SortableHeaderBlockItem({ bl
     const newVariations = variations.filter(v => v.id !== activeVariationId).map(v => ({ ...v, content: variationContents[v.id] ?? v.content }));
     const newActiveId = newVariations[0].id;
     
+    // Preserve the high-water-mark counter (do NOT decrement on delete)
     onUpdate(block.id, {
       variations: newVariations,
       activeVariationId: newActiveId
@@ -344,7 +352,7 @@ const SortableHeaderBlockItem = React.memo(function SortableHeaderBlockItem({ bl
             {...attributes} 
             {...listeners}
             className={cn(
-              "p-4 flex flex-col cursor-grab active:cursor-grabbing hover:bg-bg-surface-hover/50 transition-colors shrink-0 touch-none",
+              "p-4 flex flex-col cursor-grab active:cursor-grabbing hover:bg-bg-surface-hover/50 transition-colors shrink-0 touch-pan-y",
               isFullScreen ? "pt-[calc(1rem+var(--safe-top))]" : ""
             )}
             onClick={() => setExpanded(!expanded)}
@@ -432,13 +440,25 @@ const SortableHeaderBlockItem = React.memo(function SortableHeaderBlockItem({ bl
                   <Plus className="w-4 h-4" />
                 </button>
                 {variations.length > 1 && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShowDeleteVariationConfirm(true); }}
-                    className="p-1 rounded-lg bg-bg-surface-hover text-text-muted hover:bg-red-500/20 hover:text-red-400 transition-colors shrink-0"
-                    title="Delete Current Variation"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  (() => {
+                    const activeVariation = variations.find(v => v.id === activeVariationId);
+                    const isV1Active = activeVariation?.name === 'V1';
+                    return (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowDeleteVariationConfirm(true); }}
+                        disabled={isV1Active}
+                        className={cn(
+                          "p-1 rounded-lg bg-bg-surface-hover transition-colors shrink-0",
+                          isV1Active
+                            ? "text-text-muted/30 cursor-not-allowed"
+                            : "text-text-muted hover:bg-red-500/20 hover:text-red-400"
+                        )}
+                        title={isV1Active ? "V1 is the base variation and cannot be deleted" : "Delete Current Variation"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    );
+                  })()
                 )}
               </div>
             )}
@@ -525,6 +545,9 @@ export default function EntryPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [fullScreenBlockId, setFullScreenBlockId] = useState<string | null>(null);
+  const [genCounter, setGenCounter] = useState<number>(1);
+  const savedDefaultBlocksRef = useRef<HeaderBlock[]>([]);
+  const variationsRef = useRef<CardVariation[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -576,8 +599,17 @@ export default function EntryPage() {
         
         const cardVariations = card.variations || [];
         setVariations(cardVariations);
+        variationsRef.current = cardVariations;
         const activeId = card.activeVariationId || 'default';
         setActiveVariationId(activeId);
+        
+        // Initialize generation counter from saved card or compute from existing variations
+        // Floor of 1 accounts for the implicit G1 (Default) tab
+        const savedGenNum = card.nextGenerationNumber || Math.max(1, ...(cardVariations.map(v => {
+          const match = v.name.match(/^G(\d+)/);
+          return match ? parseInt(match[1], 10) : 0;
+        })));
+        setGenCounter(savedGenNum);
         
         let blocksToLoad = card.headerBlocks || [];
         if (activeId !== 'default') {
@@ -587,6 +619,7 @@ export default function EntryPage() {
         
         const sortedBlocks = [...blocksToLoad].sort((a, b) => (a.order || 0) - (b.order || 0));
         setHeaderBlocks(sortedBlocks);
+        savedDefaultBlocksRef.current = card.headerBlocks || [];
       }
     }
   }, [id]); // Removed cards from dependency array to prevent infinite loop
@@ -608,32 +641,39 @@ export default function EntryPage() {
 
     const saveCard = async () => {
       setSaveStatus('saving');
-      const cardData: Card = {
-        id: currentCardId.current,
-        name: debouncedName,
-        images: debouncedImages,
-        summary: debouncedSummary,
-        mainTag,
-        tags: debouncedTags,
-        headerBlocks: debouncedActiveVariationId === 'default' ? debouncedHeaderBlocks : (cardsRef.current?.find(c => c.id === currentCardId.current)?.headerBlocks || []),
-        variations: debouncedActiveVariationId === 'default' 
-          ? debouncedVariations 
-          : debouncedVariations.map(v => v.id === debouncedActiveVariationId ? { ...v, headerBlocks: debouncedHeaderBlocks } : v),
-        activeVariationId: debouncedActiveVariationId,
-        createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
-        isPinned: cardsRef.current?.find(c => c.id === currentCardId.current)?.isPinned || false,
-      };
+      try {
+        const existingCard = cardsRef.current?.find(c => c.id === currentCardId.current);
+        const cardData: Card = {
+          id: currentCardId.current,
+          name: debouncedName,
+          images: debouncedImages,
+          summary: debouncedSummary,
+          mainTag,
+          tags: debouncedTags,
+          headerBlocks: debouncedActiveVariationId === 'default' ? debouncedHeaderBlocks : savedDefaultBlocksRef.current,
+          variations: debouncedActiveVariationId === 'default' 
+            ? debouncedVariations 
+            : debouncedVariations.map(v => v.id === debouncedActiveVariationId ? { ...v, headerBlocks: debouncedHeaderBlocks } : v),
+          activeVariationId: debouncedActiveVariationId,
+          nextGenerationNumber: genCounter,
+          createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
+          updatedAt: Date.now(),
+          isPinned: existingCard?.isPinned || false,
+        };
 
-      const exists = cardsRef.current.some(c => c.id === currentCardId.current);
-      if (exists) {
-        await updateCard(cardData);
-      } else {
-        await addCard(cardData);
-        // We don't navigate here so the user can keep editing
+        const exists = cardsRef.current.some(c => c.id === currentCardId.current);
+        if (exists) {
+          await updateCard(cardData);
+        } else {
+          await addCard(cardData);
+        }
+        setHasUnsavedChanges(false);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+        setSaveStatus('idle');
       }
-      setHasUnsavedChanges(false);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
     };
 
     saveCard();
@@ -645,9 +685,9 @@ export default function EntryPage() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const base64Images = await Promise.all(files.map(fileToBase64));
-      setImages(prev => [...prev, ...base64Images]);
+      const files = Array.from(e.target.files) as File[];
+      const compressedImages = await Promise.all(files.map(f => compressImage(f, 1200, 0.7)));
+      setImages(prev => [...prev, ...compressedImages]);
     }
   };
 
@@ -694,30 +734,38 @@ export default function EntryPage() {
       return;
     }
     
-    const cardData: Card = {
-      id: currentCardId.current,
-      name,
-      images,
-      summary,
-      mainTag,
-      tags: selectedTags,
-      headerBlocks: activeVariationId === 'default' ? headerBlocks : (cardsRef.current?.find(c => c.id === currentCardId.current)?.headerBlocks || []),
-      variations: activeVariationId === 'default' 
-        ? variations 
-        : variations.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v),
-      activeVariationId,
-      createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
-      isPinned: cardsRef.current?.find(c => c.id === currentCardId.current)?.isPinned || false,
-    };
+    try {
+      const existingCard = cardsRef.current?.find(c => c.id === currentCardId.current);
+      const cardData: Card = {
+        id: currentCardId.current,
+        name,
+        images,
+        summary,
+        mainTag,
+        tags: selectedTags,
+        headerBlocks: activeVariationId === 'default' ? headerBlocks : savedDefaultBlocksRef.current,
+        variations: activeVariationId === 'default' 
+          ? variations 
+          : variations.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v),
+        activeVariationId,
+        nextGenerationNumber: genCounter,
+        createdAt: id ? (cardsRef.current?.find(c => c.id === id)?.createdAt || Date.now()) : Date.now(),
+        updatedAt: Date.now(),
+        isPinned: existingCard?.isPinned || false,
+      };
 
-    const exists = cardsRef.current.some(c => c.id === currentCardId.current);
-    if (exists) {
-      await updateCard(cardData);
-    } else {
-      await addCard(cardData);
+      const exists = cardsRef.current.some(c => c.id === currentCardId.current);
+      if (exists) {
+        await updateCard(cardData);
+      } else {
+        await addCard(cardData);
+      }
+      setHasUnsavedChanges(false);
+      navigate('/');
+    } catch (err) {
+      console.error('Manual save failed:', err);
+      alert('Save failed. Please try again.');
     }
-    setHasUnsavedChanges(false);
-    navigate('/');
   };
 
   const handleBack = () => {
@@ -769,47 +817,63 @@ export default function EntryPage() {
 
   const handleAddCardVariation = () => {
     const newVarId = generateId();
-    const newVar = {
+    // High-water-mark: always increment from the highest number ever assigned
+    // genCounter starts at 1 (for G1 Default), so first new tab is G2
+    const nextNum = genCounter + 1;
+    setGenCounter(nextNum);
+    
+    // Save current blocks before switching
+    if (activeVariationId === 'default') {
+      savedDefaultBlocksRef.current = headerBlocks;
+    } else {
+      const updated = variationsRef.current.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v);
+      variationsRef.current = updated;
+    }
+    
+    const newVar: CardVariation = {
       id: newVarId,
-      name: `G${variations.length + 2}`, // G1 is default
-      headerBlocks: (headerBlocks || []).map(b => ({
-        ...b,
-        id: generateId(),
-        variations: b.variations?.map(v => ({ ...v, id: generateId() })) || []
-      }))
+      name: `G${nextNum}`,
+      headerBlocks: []
     };
-    setVariations(prev => [...(prev || []), newVar]);
+    const newVariations = [...variationsRef.current, newVar];
+    variationsRef.current = newVariations;
+    setVariations(newVariations);
     setActiveVariationId(newVarId);
+    setHeaderBlocks(newVar.headerBlocks);
   };
 
   const handleDeleteCardVariation = () => {
     if (activeVariationId === 'default') return; // Cannot delete default variation
     
-    const newVariations = variations.filter(v => v.id !== activeVariationId);
+    const newVariations = variationsRef.current.filter(v => v.id !== activeVariationId);
+    variationsRef.current = newVariations;
     setVariations(newVariations);
     setActiveVariationId('default');
     
-    // Switch back to default variation blocks
-    if (id) {
-      const card = cards.find(c => c.id === id);
-      if (card) {
-        setHeaderBlocks(card.headerBlocks || []);
-      }
-    }
+    // Switch back to default variation blocks using local ref (never global store)
+    setHeaderBlocks(savedDefaultBlocksRef.current);
     setShowDeleteCardVariationConfirm(false);
   };
 
   const handleSwitchCardVariation = (varId: string) => {
-    if (activeVariationId !== 'default') {
-      setVariations(prev => prev.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v));
+    // Don't switch if already on this tab
+    if (varId === activeVariationId) return;
+    
+    // Save current blocks before switching
+    if (activeVariationId === 'default') {
+      savedDefaultBlocksRef.current = headerBlocks;
+    } else {
+      const updated = variationsRef.current.map(v => v.id === activeVariationId ? { ...v, headerBlocks } : v);
+      variationsRef.current = updated;
+      setVariations(updated);
     }
     
     setActiveVariationId(varId);
     if (varId === 'default') {
-      const card = cards?.find(c => c.id === currentCardId.current);
-      setHeaderBlocks(card?.headerBlocks || []);
+      setHeaderBlocks(savedDefaultBlocksRef.current);
     } else {
-      const targetVar = variations.find(v => v.id === varId);
+      // Read from ref to avoid stale closure
+      const targetVar = variationsRef.current.find(v => v.id === varId);
       if (targetVar) setHeaderBlocks(targetVar.headerBlocks);
     }
   };
@@ -1116,7 +1180,7 @@ export default function EntryPage() {
             >
               {headerBlocks.map((block) => (
                 <SortableHeaderBlockItem 
-                  key={block.id} 
+                  key={`${block.id}-${activeVariationId}`} 
                   block={block} 
                   onUpdate={updateHeaderBlock}
                   onRemove={removeHeaderBlock}

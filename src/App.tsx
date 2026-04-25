@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { StoreProvider } from './store';
 import MainScreen from './pages/MainScreen';
 import EntryPage from './pages/EntryPage';
@@ -10,6 +11,32 @@ import PromptDetail from './pages/PromptDetail';
 import RecycleBin from './pages/RecycleBin';
 import Layout from './components/Layout';
 import { AnimatePresence, motion } from 'motion/react';
+import { App as CapApp } from '@capacitor/app';
+
+/**
+ * Handles the native hardware back button on Android.
+ * If the router can go back, it navigates back; otherwise it exits the app.
+ */
+function HardwareBackButton() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const listener = CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack && location.pathname !== '/') {
+        navigate(-1);
+      } else {
+        CapApp.exitApp();
+      }
+    });
+
+    return () => {
+      listener.then(h => h.remove());
+    };
+  }, [navigate, location.pathname]);
+
+  return null;
+}
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -35,6 +62,7 @@ export default function App() {
   return (
     <StoreProvider>
       <BrowserRouter>
+        <HardwareBackButton />
         <Layout>
           <AnimatedRoutes />
         </Layout>

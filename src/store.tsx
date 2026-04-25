@@ -1,5 +1,5 @@
 import localforage from 'localforage';
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { Card, Project, Tag, PromptProject, DeletedHeaderBlock } from './types';
 
 const DEFAULT_TAGS: Tag[] = [
@@ -24,6 +24,15 @@ const DEFAULT_TAGS: Tag[] = [
   { id: '19', name: 'Dystopian', color: 'bg-zinc-500' },
   { id: '20', name: 'Isekai', color: 'bg-slate-500' },
 ];
+
+const EMPTY_STATE: AppStateData = {
+  cards: [],
+  projects: [],
+  promptProjects: [],
+  tags: DEFAULT_TAGS,
+  deletedHeaderBlocks: [],
+  theme: 'dark',
+};
 
 interface AppStateData {
   cards: Card[];
@@ -50,6 +59,12 @@ interface AppState extends AppStateData {
   addDeletedHeaderBlock: (block: DeletedHeaderBlock) => Promise<void>;
   updateDeletedHeaderBlocks: (blocks: DeletedHeaderBlock[]) => Promise<void>;
   setTheme: (theme: string) => Promise<void>;
+  /** Replace the entire state from an external source (e.g. cloud restore) */
+  replaceState: (newState: AppStateData) => void;
+  /** Reset state to empty defaults (used on sign-out to prevent data bleeding) */
+  clearState: () => void;
+  /** Monotonically increasing counter that bumps on every state mutation */
+  stateVersion: number;
   loading: boolean;
 }
 
@@ -70,15 +85,9 @@ const loadFromStorage = async (): Promise<AppStateData | null> => {
 };
 
 export const StoreProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<AppStateData>({
-    cards: [],
-    projects: [],
-    promptProjects: [],
-    tags: DEFAULT_TAGS,
-    deletedHeaderBlocks: [],
-    theme: 'dark'
-  });
+  const [state, setState] = useState<AppStateData>({ ...EMPTY_STATE });
   const [loading, setLoading] = useState(true);
+  const [stateVersion, setStateVersion] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -149,7 +158,36 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       saveToStorage(next);
       return next;
     });
+    setStateVersion(v => v + 1);
   };
+
+  /**
+   * Replace the entire in-memory state from an external source (e.g. cloud
+   * restore). This does NOT write to localforage because the caller
+   * (useCloudSync.pullFromCloud) already persisted the data.
+   */
+  const replaceState = useCallback((newState: AppStateData) => {
+    setState({
+      cards: newState.cards || [],
+      projects: newState.projects || [],
+      promptProjects: newState.promptProjects || [],
+      tags: newState.tags?.length ? newState.tags : DEFAULT_TAGS,
+      deletedHeaderBlocks: newState.deletedHeaderBlocks || [],
+      theme: newState.theme || 'dark',
+    });
+    // Do NOT bump stateVersion here – this is an external replace, not a
+    // user-initiated mutation, so it should not trigger auto-backup.
+  }, []);
+
+  /**
+   * Reset state to empty defaults. Used on sign-out to guarantee that
+   * Account A's data cannot bleed into Account B's cloud.
+   * localforage is wiped by the caller (useCloudSync.signOutAndWipe).
+   */
+  const clearState = useCallback(() => {
+    setState({ ...EMPTY_STATE });
+    // Do NOT bump stateVersion – this is a wipe, not a user edit.
+  }, []);
 
   const addCard = async (card: Card) => {
     await updateState(prev => {
@@ -253,7 +291,8 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       addCard, updateCard, updateCards, deleteCard, 
       addProject, updateProject, deleteProject, 
       addPromptProject, updatePromptProject, deletePromptProject,
-      addTag, deleteTag, addDeletedHeaderBlock, updateDeletedHeaderBlocks, setTheme, loading 
+      addTag, deleteTag, addDeletedHeaderBlock, updateDeletedHeaderBlocks, setTheme,
+      replaceState, clearState, stateVersion, loading 
     }}>
       {children}
     </StoreContext.Provider>
@@ -265,4 +304,3 @@ export const useStore = () => {
   if (!context) throw new Error('useStore must be used within a StoreProvider');
   return context;
 };
-

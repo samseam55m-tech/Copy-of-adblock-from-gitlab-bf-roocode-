@@ -7,6 +7,10 @@ import { Plus, X, ArrowLeft, GripVertical, Trash2, Search, SlidersHorizontal, Fo
 import { motion, AnimatePresence } from 'motion/react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { useScrollDirection } from '../hooks/useScrollDirection';
+import { useLayout, LAYOUT_HIDE_SLIDE_PX } from '../components/Layout';
+
+const HIDE_SLIDE_PX = LAYOUT_HIDE_SLIDE_PX;
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -28,12 +32,20 @@ export default function ProjectDetail() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchFilter, setSearchFilter] = useState<'all' | 'headerBlocks' | 'cards'>('all');
+  const { barsVisible } = useScrollDirection(5);
+  const { setSelectionActive } = useLayout();
+  const effectiveVisible = barsVisible || selectionMode;
+
+  React.useEffect(() => {
+    setSelectionActive(selectionMode);
+    return () => setSelectionActive(false);
+  }, [selectionMode, setSelectionActive]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 500,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -195,8 +207,18 @@ export default function ProjectDetail() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      <div className="sticky top-0 z-30 bg-bg-main/80 backdrop-blur-md p-4 flex flex-col gap-3 shrink-0 border-b border-border-main/50">
+    <div className="w-full h-full overflow-hidden relative">
+      {/* ── ABSOLUTE TOP HEADER ── */}
+      <div
+        className="absolute top-0 left-0 right-0 z-[90] bg-bg-main will-change-transform"
+        style={{
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `-${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 1px 0 0 var(--border-main)',
+        }}
+      >
+      <div className="p-4 flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/projects')} className="p-2 hover:bg-bg-surface-hover rounded-lg -ml-2 shrink-0">
             <ArrowLeft className="w-5 h-5" />
@@ -299,8 +321,17 @@ export default function ProjectDetail() {
           </motion.div>
         )}
       </div>
+      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+      {/* ── FULL-HEIGHT SCROLL CONTAINER ── */}
+      <div
+        className="w-full h-full overflow-y-auto px-4"
+        style={{
+          overscrollBehavior: 'none',
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px + 80px + 24px)',
+          paddingBottom: 'calc(var(--safe-bottom, 0px) + 80px + 24px)',
+        }}
+      >
         {projectCards.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-text-muted">
             <Plus className="w-16 h-16 opacity-20 mb-4" />
@@ -370,10 +401,16 @@ export default function ProjectDetail() {
         )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* ── ABSOLUTE FAB ── */}
       <button 
         onClick={() => setShowAddModal(true)}
-        className="fab-button bg-text-main text-bg-main"
+        className="absolute z-[90] w-14 h-14 rounded-2xl shadow-2xl flex items-center justify-center bg-text-main text-bg-main active:scale-[0.92] will-change-transform"
+        style={{
+          right: 16,
+          bottom: 'calc(var(--safe-bottom, 0px) + 80px + 16px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         <Plus className="w-8 h-8" />
       </button>

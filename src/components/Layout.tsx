@@ -1,9 +1,26 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, createContext, useContext } from 'react';
 import { Menu, X, Home, Folder, Plus, BarChart3, BookOpen, Trash2, ChevronRight, ArrowLeft, Sun, Moon, MoonStar, Palette } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useStore } from '../store';
 import { generateId } from '../utils';
 import { useSwipeable } from 'react-swipeable';
+import AccountMenu from './AccountMenu';
+import { useScrollDirection } from '../hooks/useScrollDirection';
+
+// ── Hide-on-scroll layout constants ──────────────────────────────────────────
+// Both the Layout header and per-page search bars translate by the SAME absolute
+// pixel value so they slide in lock-step — no ghost gap between them.
+const HIDE_SLIDE_PX = 200;
+
+// React context so pages can tell Layout when selection mode is active,
+// which locks the header visible (no hide-on-scroll while selecting).
+export const LayoutContext = createContext<{ setSelectionActive: (v: boolean) => void }>({
+  setSelectionActive: () => {},
+});
+export const LAYOUT_HIDE_SLIDE_PX = HIDE_SLIDE_PX;
+export function useLayout() {
+  return useContext(LayoutContext);
+}
 
 const THEMES = [
   { id: 'light', name: 'Light', icon: Sun, colors: ['#FFFFFF', '#3B82F6', '#E5E5E5'] },
@@ -26,9 +43,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [selectionActive, setSelectionActive] = useState(false);
   const { projects, cards, promptProjects, addProject, theme, setTheme } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const { barsVisible } = useScrollDirection(5);
+  // Lock bars visible when any page has selection mode active
+  const barsHidden = !barsVisible && !selectionActive;
 
   const handlers = useSwipeable({
     onSwipedRight: (e) => {
@@ -132,38 +153,51 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [navigate]);
 
   return (
-    <div {...handlers} className={`h-[100dvh] bg-bg-main text-text-main font-sans flex flex-col transition-colors duration-300 ${theme === 'starry-night' ? 'starry-bg' : ''}`} style={{ paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}>
-      {/* Top Bar */}
-      <header className="h-14 flex items-center px-4 border-b border-border-main bg-bg-main/95 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
-        <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0">
-          <Menu className="w-6 h-6" />
-        </button>
-        
-        {breadcrumbs.length > 1 && (
-          <button 
-            onClick={() => navigate(breadcrumbs[breadcrumbs.length - 2].path)}
-            className="p-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0 ml-1 md:hidden"
-          >
-            <ArrowLeft className="w-5 h-5" />
+    <LayoutContext.Provider value={{ setSelectionActive }}>
+    <div {...handlers} className={`h-[100dvh] bg-bg-main text-text-main font-sans relative transition-colors duration-300 overflow-hidden ${theme === 'starry-night' ? 'starry-bg' : ''}`}>
+      {/* ── ABSOLUTE TOP HEADER ── z-100, solid bg, slides up by fixed px */}
+      <header
+        className="absolute top-0 left-0 right-0 z-[100] bg-bg-main will-change-transform"
+        style={{
+          paddingTop: 'var(--safe-top, 0px)',
+          transform: `translateY(${barsHidden ? `-${HIDE_SLIDE_PX}px` : '0px'})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
+        <div className="h-14 flex items-center px-4 border-b border-border-main">
+          <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0">
+            <Menu className="w-6 h-6" />
           </button>
-        )}
+          
+          {breadcrumbs.length > 1 && (
+            <button 
+              onClick={() => navigate(breadcrumbs[breadcrumbs.length - 2].path)}
+              className="p-2 hover:bg-bg-surface-hover rounded-lg transition-colors shrink-0 ml-1 md:hidden"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
 
-        <div className="ml-2 md:ml-4 flex items-center overflow-hidden">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={crumb.path}>
-              {index > 0 && <ChevronRight className="w-4 h-4 text-text-muted mx-1.5 shrink-0" />}
-              <Link 
-                to={crumb.path}
-                className={`truncate transition-colors ${
-                  index === breadcrumbs.length - 1 
-                    ? 'font-semibold text-lg tracking-tight text-text-main' 
-                    : 'text-sm font-medium text-text-muted hover:text-text-secondary hidden md:block'
-                }`}
-              >
-                {crumb.label}
-              </Link>
-            </React.Fragment>
-          ))}
+          <div className="ml-2 md:ml-4 flex items-center overflow-hidden flex-1 min-w-0">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.path}>
+                {index > 0 && <ChevronRight className="w-4 h-4 text-text-muted mx-1.5 shrink-0" />}
+                <Link 
+                  to={crumb.path}
+                  className={`truncate transition-colors ${
+                    index === breadcrumbs.length - 1 
+                      ? 'font-semibold text-lg tracking-tight text-text-main' 
+                      : 'text-sm font-medium text-text-muted hover:text-text-secondary hidden md:block'
+                  }`}
+                >
+                  {crumb.label}
+                </Link>
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Account Menu Avatar */}
+          <AccountMenu />
         </div>
       </header>
 
@@ -299,14 +333,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 relative flex flex-col overflow-hidden" style={{ paddingBottom: showBottomNav ? '56px' : '0px' }}>
+      {/* Main Content — fills full viewport; pages sit behind absolute headers */}
+      <main className="w-full h-full relative overflow-hidden">
         {children}
       </main>
 
-      {/* Bottom Navigation Bar */}
+      {/* ── ABSOLUTE BOTTOM NAV ── z-100, slides down by fixed px */}
       {showBottomNav && (
-        <div className="bottom-nav">
+        <div
+          className="absolute bottom-0 left-0 right-0 z-[100] bg-bg-main will-change-transform"
+          style={{
+            paddingBottom: 'var(--safe-bottom, 0px)',
+            transform: `translateY(${barsHidden ? `${HIDE_SLIDE_PX}px` : '0px'})`,
+            transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
           <div className="bottom-nav-inner">
             <div className="bottom-nav-pill">
               {NAV_ITEMS.map(item => {
@@ -328,5 +369,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </div>
+    </LayoutContext.Provider>
   );
 }

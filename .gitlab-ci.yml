@@ -1,0 +1,59 @@
+image: ghcr.io/cirruslabs/android-sdk:34
+
+stages:
+  - build
+
+build-apk:
+  stage: build
+  before_script:
+    - apt-get update && apt-get install -y curl openjdk-21-jdk
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y nodejs
+    - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+  script:
+    - npm install --legacy-peer-deps
+    - npm install @capacitor/core @capacitor/android @codetrix-studio/capacitor-google-auth --legacy-peer-deps
+    - npm install @capacitor/cli -D --legacy-peer-deps
+    - npm run build
+    - npx cap add android
+    - npx cap sync android
+
+    # --- Inject Google Auth native config into the dynamically generated android folder ---
+
+    # 1. Add server_client_id to strings.xml
+    - sed -i 's|</resources>|    <string name="server_client_id">1037717798765-jscjfdk82phc7sju9jkq53157mik4deg.apps.googleusercontent.com</string>\n</resources>|' android/app/src/main/res/values/strings.xml
+
+    # 2. Add GoogleAuth import
+    - sed -i 's|import com.getcapacitor.BridgeActivity;|import com.getcapacitor.BridgeActivity;\nimport com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth;|' $(find android/app/src/main/java -name MainActivity.java)
+
+    # 3. Add onCreate with registerPlugin
+    - sed -i 's|super.onCreate(savedInstanceState);|super.onCreate(savedInstanceState);\n        registerPlugin(GoogleAuth.class);|' $(find android/app/src/main/java -name MainActivity.java)
+
+    - echo "--- MainActivity.java after injection ---"
+    - cat $(find android/app/src/main/java -name MainActivity.java)
+
+    # --- End Google Auth injection ---
+
+    - "echo 'configurations.all { resolutionStrategy { exclude group: \"org.jetbrains.kotlin\", module: \"kotlin-stdlib-jdk7\"; exclude group: \"org.jetbrains.kotlin\", module: \"kotlin-stdlib-jdk8\" } }' >> android/app/build.gradle"
+    - |
+      if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+        echo "Signing variables detected - building signed release APK"
+        echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
+        echo "android.signingConfigs { release { storeFile file(\"release-key.jks\"); storePassword '${KEYSTORE_PASSWORD}'; keyAlias '${KEY_ALIAS}'; keyPassword '${KEY_PASSWORD}' } }" >> android/app/build.gradle
+        echo 'android.buildTypes.release.signingConfig android.signingConfigs.release' >> android/app/build.gradle
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleRelease
+        cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/app-signed.apk
+      else
+        echo "WARNING: Signing variables not configured - building debug APK"
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug
+        cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/app-signed.apk
+      fi
+  artifacts:
+    name: "Roleplay-Vault-APK"
+    paths:
+      - android/app/build/outputs/apk/app-signed.apk
+    expire_in: 1 week

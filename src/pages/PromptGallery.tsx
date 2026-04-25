@@ -6,6 +6,10 @@ import { generateId, cn } from '../utils';
 import ConfirmModal from '../components/ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { PromptProjectItem } from '../components/PromptProjectItem';
+import { useScrollDirection } from '../hooks/useScrollDirection';
+import { useLayout, LAYOUT_HIDE_SLIDE_PX } from '../components/Layout';
+
+const HIDE_SLIDE_PX = LAYOUT_HIDE_SLIDE_PX;
 
 const PROJECT_COLORS = [
   'text-text-muted', 'text-blue-400', 'text-yellow-400', 'text-green-400', 
@@ -29,6 +33,15 @@ export default function PromptGallery() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { barsVisible } = useScrollDirection(5);
+  const { setSelectionActive } = useLayout();
+  const effectiveVisible = barsVisible || selectionMode;
+
+  // Sync selection mode to Layout so the Layout header also stays visible
+  React.useEffect(() => {
+    setSelectionActive(selectionMode);
+    return () => setSelectionActive(false);
+  }, [selectionMode, setSelectionActive]);
 
   const handleDeleteSelected = async () => {
     const projectsToUpdate = Array.from(selectedProjects)
@@ -181,8 +194,18 @@ export default function PromptGallery() {
   const unpinnedProjects = useMemo(() => filteredProjects.filter(p => !p.isPinned), [filteredProjects]);
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      <div className="sticky top-0 z-30 bg-bg-main backdrop-blur-md p-4 pb-4 flex flex-col gap-3 shrink-0" style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+    <div className="w-full h-full overflow-hidden relative">
+      {/* ── ABSOLUTE TOP HEADER ── */}
+      <div
+        className="absolute top-0 left-0 right-0 z-[90] bg-bg-main will-change-transform"
+        style={{
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `-${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 1px 0 0 var(--border-main)',
+        }}
+      >
+      <div className="p-4 pb-4 flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -265,8 +288,17 @@ export default function PromptGallery() {
           </AnimatePresence>
         </div>
       </div>
+      </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
+      {/* ── FULL-HEIGHT SCROLL CONTAINER ── */}
+      <div
+        className="w-full h-full overflow-y-auto p-4"
+        style={{
+          overscrollBehavior: 'none',
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px + 100px + 24px)',
+          paddingBottom: 'calc(var(--safe-bottom, 0px) + 80px + 24px)',
+        }}
+      >
       {filteredProjects.length > 0 && (
         <div className="space-y-8">
           {pinnedProjects.length > 0 && (
@@ -328,10 +360,16 @@ export default function PromptGallery() {
       )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* ── ABSOLUTE FAB ── */}
       <button 
         onClick={() => setShowCreateGroup(true)}
-        className="fab-button bg-text-main text-bg-main"
+        className="absolute z-[90] w-14 h-14 rounded-2xl shadow-2xl flex items-center justify-center bg-text-main text-bg-main active:scale-[0.92] will-change-transform"
+        style={{
+          right: 16,
+          bottom: 'calc(var(--safe-bottom, 0px) + 80px + 16px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         <Plus className="w-8 h-8" />
       </button>

@@ -586,15 +586,10 @@
     contain-intrinsic-size: 0 200px;
   }
 
-  /* Bottom nav bar */
+  /* Bottom nav bar — positioning now handled inline in Layout.tsx
+     for the absolute hide-on-scroll architecture */
   .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 40;
-    padding-bottom: var(--safe-bottom);
-    background: var(--bg-main);
+    /* position/bottom/left/right/z-index handled by inline styles */
   }
 
   .bottom-nav-inner {

@@ -9,10 +9,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useScrollDirection } from '../hooks/useScrollDirection';
+import { useLayout, LAYOUT_HIDE_SLIDE_PX } from '../components/Layout';
+
+const HIDE_SLIDE_PX = LAYOUT_HIDE_SLIDE_PX;
 
 export default function MainScreen() {
   const { cards, projects, addProject, updateProject, tags, deleteCard, updateCard, updateCards } = useStore();
   const navigate = useNavigate();
+  const { setSelectionActive } = useLayout();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
@@ -29,8 +33,14 @@ export default function MainScreen() {
   const [searchFilter, setSearchFilter] = useState<'all' | 'headerBlocks' | 'cards'>('all');
   const { barsVisible } = useScrollDirection(5);
 
-  // Issue 3: lock bars visible when in selection mode
+  // Lock bars visible when in selection mode
   const effectiveVisible = barsVisible || selectionMode;
+
+  // Sync selection mode to Layout so the Layout header also stays visible
+  React.useEffect(() => {
+    setSelectionActive(selectionMode);
+    return () => setSelectionActive(false);
+  }, [selectionMode, setSelectionActive]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -169,9 +179,20 @@ export default function MainScreen() {
   };
 
   return (
-    <div className="flex-1 h-full overflow-hidden relative">
-      {/* Top Bar — absolute, GPU-only transform, no layout reflow */}
-      <div className={`absolute top-14 left-0 right-0 z-30 bg-bg-main p-4 flex flex-col gap-3 will-change-transform transition-transform duration-300 ease-out ${effectiveVisible ? 'translate-y-0' : '-translate-y-full'}`} style={{ boxShadow: '0 1px 0 0 var(--border-main)' }}>
+    <div className="w-full h-full overflow-hidden relative">
+      {/* ── ABSOLUTE TOP HEADER (search / selection bar) ──
+           Starts at top-0, padding-top accounts for safe-area + Layout header (56px).
+           Translates by the SAME fixed px as Layout header → no ghost gap. */}
+      <div
+        className="absolute top-0 left-0 right-0 z-[90] bg-bg-main will-change-transform"
+        style={{
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `-${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 1px 0 0 var(--border-main)',
+        }}
+      >
+      <div className="p-4 flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <AnimatePresence mode="wait">
             {selectionMode ? (
@@ -268,9 +289,18 @@ export default function MainScreen() {
           </motion.div>
         )}
       </div>
+      </div>
 
-      {/* Masonry Grid — pt-24 clears the absolute search bar, pb-40 clears bottom nav + FAB */}
-      <div className="h-full overflow-y-auto px-4 pt-[140px] pb-40" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'none' }}>
+      {/* ── FULL-HEIGHT SCROLL CONTAINER ── sits behind absolute headers */}
+      <div
+        className="w-full h-full overflow-y-auto px-4"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'none',
+          paddingTop: 'calc(var(--safe-top, 0px) + 56px + 80px + 24px)',
+          paddingBottom: 'calc(var(--safe-bottom, 0px) + 80px + 24px)',
+        }}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -343,10 +373,16 @@ export default function MainScreen() {
         )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* ── ABSOLUTE FAB ── hides with bottom nav */}
       <button 
         onClick={() => navigate('/entry')}
-        className="fab-button bg-text-main text-bg-main"
+        className="absolute z-[90] w-14 h-14 rounded-2xl shadow-2xl flex items-center justify-center bg-text-main text-bg-main active:scale-[0.92] transition-transform will-change-transform"
+        style={{
+          right: 16,
+          bottom: 'calc(var(--safe-bottom, 0px) + 80px + 16px)',
+          transform: `translateY(${effectiveVisible ? '0px' : `${HIDE_SLIDE_PX}px`})`,
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         <Plus className="w-8 h-8" />
       </button>

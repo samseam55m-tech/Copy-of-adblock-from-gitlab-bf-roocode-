@@ -1,0 +1,103 @@
+BIP-39 candidate words found in corpus + OCR (n=93):
+  order
+  find
+  seed
+  phrase
+  this
+  picture
+  welcome
+  brave
+  world
+  black
+  matter
+  peace
+  end
+  police
+  one
+  more
+  can
+  only
+  real
+  food
+  moon
+  tower
+  first
+  future
+  neither
+  crime
+  party
+  have
+  exist
+  any
+  place
+  subject
+  define
+  coin
+  digital
+  owner
+  next
+  public
+  key
+  verify
+  common
+  solution
+  that
+  double
+  problem
+  entire
+  system
+  company
+  just
+  like
+  about
+  later
+  spend
+  way
+  confirm
+  aware
+  all
+  they
+  proof
+  time
+  issue
+  tag
+  puzzle
+  prize
+  start
+  address
+  hidden
+  great
+  book
+  now
+  found
+  clock
+  space
+  chest
+  neck
+  top
+  left
+  hope
+  will
+  bottom
+  two
+  above
+  long
+  right
+  day
+  number
+  word
+  base
+  liberty
+  under
+  latin
+  also
+  another
+
+User-hint confirmed seed words:
+  moon        -> BIP39
+  tower       -> BIP39
+  food        -> BIP39
+  real        -> BIP39
+  black       -> BIP39
+  this        -> BIP39
+  breathe     -> NOT in BIP-39 list

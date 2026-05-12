@@ -1,0 +1,40 @@
+0.80	8:49①品
+0.91	Vol0.005G
+0.99	47%
+0.91	LTE KB/s 
+0.99	PrivateKeys
+1.00	Hints
+0.98	· 'Moon' and 'Tower' can be found on the clock's hands
+0.97	· 'Food' can be found on the Seattle Space Needle
+0.98	· 'Breathe' can be found on George Floyd's chest as well as
+0.99	the Statue's Neck
+0.92	· Rune 1 (Top Left) is in Russian: "A Hanelocb 4To clona
+0.89	6yAyT pNcbINaTb MHoro 6uTKoИHoB" and translates to "I
+1.00	hope that many bitcoins will be sent here"
+0.96	 Rune 2 (Bottom Left) is in Russian: "CyMMa AByx yNcen"
+1.00	and translates to "Sum of two numbers"
+0.99	· Rune 3 (Above Trump) is in Bill's Cipher and translates to
+1.00	"Tuesday"
+0.98	· Rune 4 (Long on Right) is in Russian: "3necb
+0.56	"X dawoh qhat yighdah eh iahNoYing iaheaoddnmee
+0.99	and translates to "Here are encrypted bitcoins for a rainy
+0.98	day number X."
+0.98	 'This' is likely a seed word, as it's repeated in "This is the
+0.98	first prediction," "Fuck this shit," and "Find the seed
+1.00	phrase in the this picture"
+0.98	· 'Subject' is underline on the statue to the right
+0.99	· Using Forensically, or Photoshop, the base of the Statue
+0.97	of Liberty reveals "Only Bitcoin" under "Only real Bitcoin"
+0.99	which likely means 'Real' is a seed word
+0.97	· The Latin to the bottom left refers to "The Pot Calling The
+0.99	Kettle Black" with 'Black' also being repeated in
+1.00	references to the Black Lives Matter movement, so it's
+0.96	likely another word
+0.97	Pack and go on a
+0.93	Singgpore untold
+0.97	World Tour.
+0.83	IndiGo -7T
+0.98	Great destinations&
+0.97	Great prices only on gol...
+0.97	Book now →
+0.97	*T&Csapply

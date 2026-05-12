@@ -1,0 +1,12 @@
+0.88	w D 60:6
+0.86	Vol
+0.99	13.15G
+1.00	42%
+1.00	LTE
+0.94	KB/s
+0.98	 privatekeys.pw/puzzles/0
+0.86	:D
+0.98	ST
+0.88	P
+0.96	1865-202...
+0.93	1KfZGvwZxsvSmemoCmEV75uqcNzYBHjkHZ
